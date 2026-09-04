@@ -13,10 +13,10 @@
 - A custom `init` (`src/main.rs`, using the `liblk` and `nix` crate) as 
   PID 1, mounts pseudo-filesystems, `chdir` into `/admin`, then `exec` into
   `busybox sh` or `lk --shell` as fallback.
-- Static recovery tools in `/bin`, built automatically by `make tools`: `e2fsck`,
-  `resize2fs`, `mke2fs`, `dumpe2fs`, `tune2fs` (from e2fsprogs), `fsck.vfat`, 
-  `mkfs.vfat` (from dosfstools), and `lk` (guarded file ops, partition listing, 
-  mount or umount, and built-in shell). See also: [Fixing Disks and Partitions](Fixing-Disks-and-Partitions.md).
+- Static recovery tools in `/bin`, built automatically by `make tools`: e2fsprogs,
+  dosfstools, `lk`, util-linux (`fdisk`, `cfdisk`, `mount`, `umount`, `sfdisk`,
+  `findmnt`, `blkid`, and filesystem helpers), XFS tools, Btrfs tools, F2FS tools,
+  ntfs-3g, testdisk, photorec, and rsync. See also [Fixing Disks and Partitions](Fixing-Disks-and-Partitions.md).
 - Directory layout:
 ```bash
 /
@@ -29,7 +29,7 @@
 /mnt
 /admin
 ```
-- Kernel filesystem support: **squashfs, ext4, vfat, btrfs, xfs, ntfs3**, plus
+- Kernel filesystem support: **squashfs, ext4, vfat, btrfs, xfs, f2fs, ntfs3**, plus
   GPT and MBR partition table parsing and device-mapper (kernel side). See
   [Supported Filesystems](Supported-Filesystems.md) for the full picture.
 - Storage support: ATA or SATA (AHCI) and NVMe, plus loop devices.

@@ -1,12 +1,12 @@
+use liblk::*;
+use nix::mount::MsFlags;
+use nix::unistd::{chdir, setsid};
 use std::env;
-use std::os::unix::process::CommandExt;
-use std::process::Command;
-use std::path::Path;
 use std::fs::OpenOptions;
 use std::io::Write;
-use liblk::*;
-use nix::unistd::{chdir, setsid};
-use nix::mount::MsFlags;
+use std::os::unix::process::CommandExt;
+use std::path::Path;
+use std::process::Command;
 
 const CYAN_BOLD: &str = "\x1b[1;36m";
 const RESET: &str = "\x1b[0m";
@@ -14,12 +14,18 @@ const RESET: &str = "\x1b[0m";
 fn mount_fs(source: &str, target: &str, fstype: &str, flags: MsFlags) {
     let path = Path::new(target);
     if let Err(e) = fs::lkcreate(path) {
-        ui::error(&format!("Failed to create {} directory! Err: {}", target, e));
+        ui::error(&format!(
+            "Failed to create {} directory! Err: {}",
+            target, e
+        ));
         std::thread::sleep(std::time::Duration::from_secs(3));
         clear();
     }
     if let Err(e) = fs::lkmount(source, path, fstype, format!("{:?}", flags).as_str()) {
-        ui::error(&format!("Failed to mount {} on {}! Err: {}", fstype, target, e));
+        ui::error(&format!(
+            "Failed to mount {} on {}! Err: {}",
+            fstype, target, e
+        ));
         std::thread::sleep(std::time::Duration::from_secs(3));
         clear();
     }
@@ -35,7 +41,10 @@ fn bootup() {
     clear();
     print!("{CYAN_BOLD}");
     println!("");
-    println!("                    BLACK FOX RECOVERY {}", env!("CARGO_PKG_VERSION"));
+    println!(
+        "                    BLACK FOX RECOVERY {}",
+        env!("CARGO_PKG_VERSION")
+    );
     println!("");
     println!("       \"A small recovery shell for emergency maintenance\"");
     println!("");
@@ -62,10 +71,18 @@ fn main() {
     mount_fs("proc", "/proc", "proc", MsFlags::empty());
     mount_fs("sysfs", "/sys", "sysfs", MsFlags::empty());
     mount_fs("devtmpfs", "/dev", "devtmpfs", MsFlags::empty());
-    mount_fs("tmpfs", "/tmp", "tmpfs", MsFlags::MS_NOSUID | MsFlags::MS_NODEV);
+    mount_fs(
+        "tmpfs",
+        "/tmp",
+        "tmpfs",
+        MsFlags::MS_NOSUID | MsFlags::MS_NODEV,
+    );
     let _ = fs::lkcreate(Path::new("/admin"));
     if let Err(e) = chdir("/admin") {
-        ui::error(&format!("Failed to change directory to \"/admin\"! Err: {}", e));
+        ui::error(&format!(
+            "Failed to change directory to \"/admin\"! Err: {}",
+            e
+        ));
         std::thread::sleep(std::time::Duration::from_secs(3));
         clear();
     }
@@ -85,7 +102,10 @@ fn main() {
         .env("PS1", "\x1b[1;36m[ blackfox@admin ] #\x1b[0m ")
         .current_dir("/admin")
         .exec();
-    ui::error(&format!("FATAL: Failed to execute bash shell! Err: {}", err));
+    ui::error(&format!(
+        "FATAL: Failed to execute bash shell! Err: {}",
+        err
+    ));
     ui::error("Halting system to prevent kernel panic!");
     loop {
         clear();

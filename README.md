@@ -18,7 +18,7 @@ small trusted environment.
   dosfstools binaries, [lk](https://github.com/source-liskalinux/lk) a small
   filesystem and shell CLI (protected-path-guarded `cp`, `mv`, `rm`,
   `partition listing`, `mount`, `umount`, and a built-in shell) built on the same
-  `liblk` crate as Black Fox own `init`, plus util-linux (`fdisk`, `sfdisk`, `findmnt`, `swapon`, `blockdev`, `fsck`), ntfs-3g (ntfs mount and
+  `liblk` crate as Black Fox own `init`, plus `fox` (a small static terminal editor), util-linux (`fdisk`, `cfdisk`, `sfdisk`, `mount`, `umount`, `findmnt`, `swapon`, `blockdev`, `fsck`), filesystem tools for XFS, Btrfs, and F2FS, ntfs-3g (NTFS mount and
   repair), testdisk (partition and file recovery), and
   rsync. See [Fixing Disks and Partitions](wiki/Fixing-Disks-and-Partitions.md) for
   more informations.
@@ -41,7 +41,6 @@ small trusted environment.
 - `autoconf`
 - `automake`
 - `libtool`
-- `ncurses` (`libncurses-dev` in Debian or Ubuntu based)
 - `libjpeg` (`libjpeg-dev` in Debian or Ubuntu based)
 - `zlib` (`zlib1g-dev` in Debian or Ubuntu based)
 - `e2fsprogs` (`libext2fs-dev` in Debian or Ubuntu based)
@@ -102,9 +101,9 @@ make kernel
 ## Notes and troubleshooting
 
 - BusyBox should be built statically (`CONFIG_STATIC=y`) so it runs cleanly in the blackfox.sfs.
-- `/bin` (already on `$PATH`) is pre-populated with statically-built `e2fsck`, `resize2fs`, `mke2fs`, `dumpe2fs`, `tune2fs`, `fsck.vfat`, `mkfs.vfat`, `lk`, real `util-linux` (`mount`, `umount`, `lsblk`, `fdisk`, `sfdisk`, `findmnt`, `swapon`/`swapoff`, `mkswap`, `blockdev`, `fsck`), `ntfs-3g` (plus `ntfsfix`, `ntfsresize`, `ntfsclone`, `mkntfs`), `testdisk`/`photorec`, and `rsync` via `make tools`. See [Fixing Disks and Partitions](wiki/Fixing-Disks-and-Partitions.md) for usage. `/bin/others` itself is where you drop in *extra* tools you build by hand (see [Extending Tools](docs/Extending-Tools.md)).
+- `/bin` (already on `$PATH`) is pre-populated with statically-built `e2fsck`, `resize2fs`, `mke2fs`, `dumpe2fs`, `tune2fs`, `fsck.vfat`, `mkfs.vfat`, `lk`, real util-linux (`mount`, `umount`, `fdisk`, `cfdisk`, `sfdisk`, `findmnt`, `swapon`/`swapoff`, `mkswap`, `blockdev`, `fsck`), XFS (`mkfs.xfs`, `xfs_repair`, `xfs_db`, `xfs_growfs`, `xfs_info`, `xfs_admin`), Btrfs (`btrfs`, `mkfs.btrfs`, `fsck.btrfs`), F2FS (`mkfs.f2fs`, `fsck.f2fs`, `dump.f2fs`, `resize.f2fs`, `sload.f2fs`), `ntfs-3g` (plus `ntfsfix`, `ntfsresize`, `ntfsclone`, `mkntfs`), `testdisk`/`photorec`, and `rsync` via `make tools`. See [Fixing Disks and Partitions](wiki/Fixing-Disks-and-Partitions.md) for usage. `/bin/others` itself is where you drop in *extra* tools you build by hand (see [Extending Tools](docs/Extending-Tools.md)).
 - BusyBox's own `ls`, `cp`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln`, `mount`, `umount`, `losetup`, `blkid`, `lsblk`, `fdisk`, `swapon`, `swapoff`, `mkswap`, `blockdev`, `fsck` applets are disabled in the `busybox` target `.config` (see [Extending Tools](docs/Extending-Tools.md)) so those commands only ever resolve to the `lk` or `util-linux` binaries above, not two clashing implementations. Because of this, always build through `make all` or `make rootfs` if `make tools` gets skipped, those commands won't exist at all.
-- `lk`'s version is pinned by `LK_VERSION` in the `Makefile` (default `main`, i.e. the upstream default branch), set it to a tag or commit for reproducible builds, e.g. `make tools LK_VERSION=v1.0.0`. The other new tools are pinned the same way via `UTIL_LINUX_VERSION`, `NTFS3G_VERSION`, `TESTDISK_VERSION`, and `RSYNC_VERSION`.
+- Tool versions are pinned in the `Makefile`: `LK_VERSION` defaults to `main`, while `NCURSES_VERSION`, `UTIL_LINUX_VERSION`, `XFSPROGS_VERSION`, `BTRFSPROGS_VERSION`, `F2FS_TOOLS_VERSION`, `NTFS3G_VERSION`, `TESTDISK_VERSION`, and `RSYNC_VERSION` select the other tool sources. Set them explicitly for reproducible builds, for example `make tools LK_VERSION=v1.0.0`.
 - Inspect the squashfs with `unsquashfs -ll out/blackfox.sfs` or mount it as a loop device (requires root).
 - If you see kernel config warnings during `merge_config.sh`, confirm the desired options are enabled in `configs/kernel.config`.
 - If `out/blackfox.sfs` grows after adding more tools, raise `ramdisk_size=` in `configs/grub.cfg` and pass a matching `RAMDISK_SIZE=` to `make run`/`make test`.

@@ -3,6 +3,15 @@ name = "blackfox"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "init"
+path = "./src/init.rs"
+
+[[bin]]
+name = "fox"
+path = "./src/fox.rs"
+
 [dependencies]
+crossterm = "0.29.0"
 liblk = "1.0.1"
 nix = { version = "0.31.3", features = ["fs", "mount", "process"] }

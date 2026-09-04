@@ -19,14 +19,18 @@ make tools
 Statically builds and installs into `/bin`:
 
 - `e2fsck`, `fsck.ext4`, `resize2fs`, `mke2fs`, `mkfs.ext4`, `dumpe2fs`, `tune2fs`: From
-  `e2fsprogs` (`E2FSPROGS_VERSION` in the `Makefile`, default 1.47.1)
+  `e2fsprogs` (`E2FSPROGS_VERSION` in the `Makefile`, default 1.47.4)
 - `fsck.vfat`, `fsck.fat`, `mkfs.vfat`, `mkfs.fat`: from `dosfstools` (`DOSFSTOOLS_VERSION` in the `Makefile`, default 4.2)
 - `lk`: A small filesystem or shell CLI from [source-liskalinux/lk](https://github.com/source-liskalinux/lk), built on the same `liblk` crate as Black Fox own `init` (`LK_VERSION` in the `Makefile`, default main). For how to use it during recovery, see the [upstream documentations](https://github.com/source-liskalinux/lk)
 > ***NOTE:** `lk` own `--mount` and `--umount` flags are newer than that doc page. This page only covers how it's built.*
-- `losetup`, `blkid`, `fdisk`, `sfdisk`, `findmnt`, `swapon`, `swapoff`, `mkswap`, `blockdev`, `fsck`: From `util-linux` (`UTIL_LINUX_VERSION` in the `Makefile`, default 2.41.2), replacing `busybox` minimal versions of the same commands.
-- `ntfs-3g`, `mount.ntfs`, `mount.ntfs-3g`, `ntfsfix`, `ntfsresize`, `ntfsclone`, `ntfslabel`, `mkntfs`, `mkfs.ntfs`: from `ntfs-3g` (`NTFS3G_VERSION` in the `Makefile`, default 2022.10.3), built with its internal FUSE so there's no libfuse or FUSE-module dependency at runtime.
+- `fox`: A small static terminal editor built from `src/fox.rs`. Open a file with `fox /path/to/file`, use `Ctrl + S` to save, `Ctrl + X` to exit, `Ctrl + W` to search, and `Ctrl + H` to show the shortcut line.
+- `losetup`, `blkid`, `fdisk`, `cfdisk`, `sfdisk`, `findmnt`, `swapon`, `swapoff`, `mkswap`, `blockdev`, `fsck`, `mount`, `umount`: From `util-linux` (`UTIL_LINUX_VERSION` in the `Makefile`, default 2.41.2), replacing `busybox` minimal versions of the same commands. `cfdisk` uses the static wide-character ncurses library built by `ncurses-tool` (`NCURSES_VERSION` in the `Makefile`, default 6.5).
+- `mkfs.xfs`, `xfs_repair`, `xfs_db`, `xfs_growfs`, `xfs_info`, `xfs_admin`: From `xfsprogs` (`XFSPROGS_VERSION`, default 7.1.1).
+- `btrfs`, `mkfs.btrfs`, `fsck.btrfs`: From `btrfs-progs` (`BTRFSPROGS_VERSION`, default 7.1).
+- `mkfs.f2fs`, `fsck.f2fs`, `dump.f2fs`, `resize.f2fs`, `sload.f2fs`: From `f2fs-tools` (`F2FS_TOOLS_VERSION`, default 1.16.0).
+- `ntfs-3g`, `mount.ntfs`, `mount.ntfs-3g`, `ntfsfix`, `ntfsresize`, `ntfsclone`, `ntfslabel`, `mkntfs`, `mkfs.ntfs`: from `ntfs-3g` (`NTFS3G_VERSION` in the `Makefile`, default 2026.7.7), built with its internal FUSE so there's no libfuse or FUSE-module dependency at runtime.
 - `testdisk`, `photorec`: From `testdisk` (`TESTDISK_VERSION` in the `Makefile`, default 7.2).
-- `rsync`: From `rsync` (`RSYNC_VERSION` in the `Makefile`, default 3.4.1), built without OpenSSL, lz4, xxHash, or zstd to keep its dependency footprint small.
+- `rsync`: From `rsync` (`RSYNC_VERSION` in the `Makefile`, default 3.5.0), built without OpenSSL, lz4, xxHash, or zstd to keep its dependency footprint small.
 
 This runs automatically as part of `make all` or `make rootfs`. You can bump
 the versions with:
@@ -176,7 +180,10 @@ because the file gets truncated while being copied into `/dev/ram0`.
 | `e2fsprogs`  | `ext4` repair or resize                                                    | <p style="color:green">Yes</p> |
 | `dosfstools` | `vfat` or EFI System Partition repair                                      | <p style="color:green">Yes</p> |
 | `ntfs-3g`    | `ntfs` mount, repair, resize, clone, and mkfs                              | <p style="color:green">Yes</p> |
-| `util-linux` | Providing `fdisk`, `sfdisk`, `findmnt`, `swapon`, `blockdev`, `fsck`, etc. | <p style="color:green">Yes</p> |
+| `util-linux` | Providing `fdisk`, `cfdisk`, `sfdisk`, `mount`, `umount`, `findmnt`, `swapon`, `blockdev`, `fsck`, etc. | <p style="color:green">Yes</p> |
+| `xfsprogs`   | XFS creation, repair, inspection, and growth                         | <p style="color:green">Yes</p> |
+| `btrfs-progs`| Btrfs creation, checking, and administration                         | <p style="color:green">Yes</p> |
+| `f2fs-tools` | F2FS creation, checking, dumping, resizing, and loading              | <p style="color:green">Yes</p> |
 | `lk`         | Guarded file ops, partition listing, mount or umount, built-in shell       | <p style="color:green">Yes</p> |
 | `testdisk`   | Partition table and deleted file recovery                                  | <p style="color:green">Yes</p> |
 | `rsync`      | Fast backups before risky operations                                       | <p style="color:green">Yes</p> |

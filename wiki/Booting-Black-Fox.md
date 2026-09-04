@@ -1,57 +1,122 @@
 # Booting Black Fox
 
+Black Fox can boot as a hybrid ISO or as a kernel plus squashfs image from an
+existing bootloader. The ISO route is usually simplest for a damaged system;
+the kernel-and-squashfs route is useful when another Linux installation still
+boots.
+
 ## 1. Boot from ISO (recommended for physical USB or CD)
 
-If your bootloader or Black Fox on your system is broken, this option might be the
-right choice and only way to do. You can download the latest stable ISO at release then 
-install the ISO on your USB or CD device:
+Download a release ISO, or build one locally with `make iso`. Writing the ISO
+overwrites the target device, so identify the device carefully first:
 
-### 1.1. If from other Linux computer:
-
-```bash
-dd if=/path/to/blackfox.iso of=/dev/<your-usb-or-cd-partition> bs=4M status=progress conv=fsync
-```
-
-Replace `<your-usb-or-cd-partition>` with your target USB or CD device like `sda` or
-`sdb`, not a partition filesystem (e.g. `sda1`). The ISO is built with `grub-mkrescue`,
-so it's a hybrid ISO that can be installed with `dd` directly to a USB stick or CD and still 
-boot on BIOS or UEFI.
-
-### 1.2. If from other platfrom (e.g. Windows, MacOS, FreeBSD, Android):
-
-Lorem ipsum
-
-### After write the ISO to the USB or CD....
-
-Boot the target machine from USB or CD, selecting the boot device in the
-BIOS or UEFI boot menu (usually `F12`, `F2`, `Del`, or `Esc` during POST,
-varies by PC motherboard or laptop).
-
-## 2. Boot alongside with your own Linux (for quick recovery)
-
-If you want to use Black Fox with your own Linux, you must download the latest
-stable Black Fox kernel and the squashfs image first in the GitHub release lists
-(usually packed in `tar.zst` format). Then configure your `/boot/grub/grub.cfg` if
-you using GRUB as bootloader, or other bootloader configuration file to add Black
-Fox if can. After that, place the `blackfox` kernel and `blackfox.sfs` at your
-`/boot` partition. For example:
-
-### 2.1. If using GRUB:
+### 1.1. From another Linux computer
 
 ```bash
-root=/dev/ram0 rootfstype=squashfs ramdisk_size=262144 console=ttyS0 console=tty0
+dd if=/path/to/blackfox.iso of=/dev/<your-usb-device> bs=4M status=progress conv=fsync
 ```
 
-### 2.2. If using Limine:
+Replace `<your-usb-device>` with the whole target device, such as `/dev/sda` or
+`/dev/sdb`, not a partition such as `/dev/sda1`. Check the device first:
 
-Lorem ipsum
+```bash
+lsblk -o NAME,SIZE,MODEL,TRAN,MOUNTPOINTS
+```
 
-### 2.3. If using rEFInd:
+Unmount its partitions, write the image, and flush pending writes:
 
-Lorem ipsum
+```bash
+umount /dev/<your-usb-device-partition> 2>/dev/null || true
+dd if=/path/to/blackfox.iso of=/dev/<your-usb-device> bs=4M status=progress conv=fsync
+sync
+```
 
-## 3. Logging in
+The ISO is built with `grub-mkrescue`, so it is a hybrid image suitable for
+direct writing to removable media. It includes BIOS and UEFI boot support when
+the host GRUB toolchain provides both targets.
 
-There is no login prompt. Black Fox boots straight into a `busybox` or `lk` shell.
-No getty and password, because this is a single-user rescue environment by design,
-not a multi-user system.
+### 1.2. Boot the target machine
+
+Select the USB or CD in the firmware boot menu, usually opened with `F12`, `F2`,
+`Del`, or `Esc` during POST. If it is not listed, check the firmware's UEFI or
+legacy mode and disable Fast Boot temporarily.
+
+### 1.3. From Windows, macOS, or another platform
+
+Use an image-writing tool such as Rufus or balenaEtcher. Select the ISO and the
+whole removable device, not an individual partition. Accept the warning that
+existing data will be erased and do not format the media after writing it.
+
+## 2. Boot alongside an existing Linux installation
+
+Download the kernel and squashfs image from the release artifacts, or build them
+locally with `make kernel squashfs`. Copy both to `/boot`:
+
+```bash
+sudo cp out/blackfox /boot/blackfox
+sudo cp out/blackfox.sfs /boot/blackfox.sfs
+```
+
+### 2.1. GRUB
+
+Add this entry to `/etc/grub.d/40_custom`:
+
+```text
+menuentry "Black Fox Recovery" {
+	linux  /boot/blackfox root=/dev/ram0 rootfstype=squashfs ramdisk_size=262144 console=ttyS0 console=tty0
+	initrd /boot/blackfox.sfs
+}
+```
+
+Regenerate the menu:
+
+```bash
+sudo grub-mkconfig -o /boot/grub/grub.cfg
+# Debian or Ubuntu commonly use:
+sudo update-grub
+```
+
+The `root=/dev/ram0` and `rootfstype=squashfs` arguments select the squashfs
+image as the read-only root. `ramdisk_size=262144` matches the project's default
+QEMU/GRUB setting; increase it if the image becomes larger.
+
+### 2.2. QEMU
+
+For a locally built image:
+
+```bash
+make run    # graphical QEMU window
+make test   # serial console, no graphical window
+```
+
+The Makefile passes `out/blackfox` as the kernel and `out/blackfox.sfs` as the
+initrd image.
+
+### 2.3. Limine and rEFInd
+
+Other bootloaders need equivalent kernel and initrd entries. Use
+`/boot/blackfox` as the kernel, `/boot/blackfox.sfs` as the initrd or initramfs
+image, and preserve this command line:
+
+```text
+root=/dev/ram0 rootfstype=squashfs ramdisk_size=262144 console=tty0
+```
+
+Consult the bootloader's documentation for its entry syntax.
+
+## 3. First boot and shell
+
+PID 1 mounts `/proc`, `/sys`, `/dev`, and `/tmp`, changes to `/admin`, installs
+BusyBox applet links, and starts a BusyBox shell. There is no login prompt,
+getty, or password because this is a single-user recovery environment.
+
+After boot, check the available tools before modifying a disk:
+
+```bash
+busybox --list
+lk -w command-name
+lk -l /bin
+```
+
+Unmount target filesystems before rebooting or removing the recovery media after
+all process completed.

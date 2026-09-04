@@ -2,16 +2,24 @@
 
 ## 1. Check the required tools
 
-Because Black Fox is currently using only `busybox`, `lk`, `e2fsprogs`,
-and `dosfstools`. **Always check before following the steps below:**
+Because Black Fox is currently bundles `busybox`, `lk`, `e2fsprogs`, `dosfstools`,
+`util-linux`, `ntfs-3g`, `testdisk`, and `rsync`. **Always check before following
+the steps below:**
 
 ```bash
 busybox --list
 lk -w command-name
+lk -l /bin
 ```
 
-`/bin` should already contain the statically-built recovery tools from
-`busybox`, `lk`, `e2fsprogs`, and `dosfstools`.
+`/bin` should already contain the statically-built recovery tools from all of the
+above. Note that `mount`, `umount`, `fdisk`, `cfdisk`, `sfdisk`, `lsblk`, `blkid`,
+`findmnt`, `swapon`, `swapoff`, `mkswap`, `blockdev`, and `fsck` are now using
+`util-linux` binaries, not from `busybox`. `busybox` own copies of these (and of `ls`,
+`mount`, `umount`, `cp`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln` are now covered
+by `lk`) were removed from the image to avoid two different implementations of the
+same command. If `busybox --list` doesn't show one of those, that's expected, use
+the real one directly.
 
 ## 2. Identify the target partition
 
@@ -27,17 +35,17 @@ lk -P
 ## 3. Mount the target's root filesystem
 
 ```bash
-mount -t ext4 /dev/sda2 /mnt
+mount /dev/sda2 /mnt ext4
 ```
 
 If `/boot` is a separate partition:
 
 ```bash
-mount -t vfat /dev/sda1 /mnt/boot
+mount /dev/sda1 /mnt/boot vfat
 ```
 
-> ***NOTE:** If the target's filesystem isn't ext4, vfat, btrfs, xfs, or ntfs3,
-> the mount command will fail. See [Supported Filesystems](Supported-Filesystems.md)
+> ***NOTE:** If the target's filesystem isn't `btrfs`, `ext4`, `f2fs`, `ntfs3`, `vfat`,
+> or `xfs`, the mount command will fail. See [Supported Filesystems](Supported-Filesystems.md)
 > for covered filesystems list.*
 
 ## 4. Bind-mount Black Fox's pseudo-filesystems into the target
@@ -101,7 +109,7 @@ If the tool asks for a kernel version and you're not sure which one is
 installed:
 
 ```bash
-ls /mnt/lib/modules
+lk -l /mnt/lib/modules
 ```
 
 ## 7. Also repair the bootloader IF needed
@@ -121,7 +129,7 @@ grub-mkconfig -o /boot/grub/grub.cfg
 ```bash
 exit
 umount /mnt/dev /mnt/sys /mnt/proc /mnt/run 2>/dev/null
-lk --umount /mnt
+umount /mnt
 reboot
 ```
 

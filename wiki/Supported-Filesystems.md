@@ -3,19 +3,26 @@
 | Filesystem | Supported? | Note |
 |---|---|---|
 | `squashfs`             | <p style="color:green">Support</p>          | - |
-| `ext4`                 | <p style="color:green">Support</p>          | - |
-| `vfat` or `fat32`      | <p style="color:green">Support</p>          | - |
+| `ext` (`2`, `3`, `4`)  | <p style="color:green">Support</p>          | - |
+| `vfat` (`fat32`)       | <p style="color:green">Support</p>          | - |
 | `btrfs`                | <p style="color:green">Support</p>          | - |
 | `xfs`                  | <p style="color:green">Support</p>          | - |
-| `ntfs`                 | <p style="color:green">Support</p>          | Kernel driver + bundled `ntfs-3g`, `ntfsfix`, and `ntfsresize` (see [Fixing Disks and Partitions](Fixing-Disks-and-Partitions.md)) |
-| `gpt`                  | <p style="color:green">Support</p>          | - |
-| `mbr`                  | <p style="color:green">Support</p>          | - |
+| `f2fs`                 | <p style="color:green">Support</p>          | - |
+| `ntfs`                 | <p style="color:green">Support</p>          | - |
 | `lvm`                  | <p style="color:yellow">Partial Support</p> | Kernel driver only |
 | `luks`                 | <p style="color:yellow">Partial Support</p> | Kernel driver and crypto algos only |
+| `zfs`                  | <p style="color:red">Not Supported</p>      | - |
 
-So the Black Fox kernel can already read and write `ext4`, `vfat`, `btrfs`, `xfs`
+| Partitions Layout | Supported? | Note |
+|---|---|---|
+| `gpt`                  | <p style="color:green">Support</p>          | - |
+| `mbr`                  | <p style="color:green">Support</p>          | - |
+
+So the Black Fox kernel can already read and write `ext4`, `vfat`, `btrfs`, `xfs`, `f2fs`
 and `ntfs` partitions directly, and it understands GPT or MBR disks and device-mapper
-volumes. `ntfs-3g` is also bundled as a userspace fallback for mounting `ntfs` and for
+volumes. Static userspace tools for XFS (`xfsprogs`), Btrfs (`btrfs-progs`), and F2FS
+(`f2fs-tools`) are also bundled for creation, checking, inspection, and repair.
+`ntfs-3g` is also bundled as a userspace fallback for mounting `ntfs` and for
 NTFS-specific repair (`ntfsfix`), resize (`ntfsresize`), cloning
 (`ntfsclone`), and formatting (`mkntfs` or `mkfs.ntfs`) that the in-kernel
 driver alone doesn't provide. What's still missing is the **userspace

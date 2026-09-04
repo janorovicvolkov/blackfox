@@ -22,7 +22,7 @@ partition problems, or other things that made you can't boot to your Linux.
 ## Core principle (read this first)
 
 Black Fox is **not** a full distro, it's just `busybox`, `lk`, `e2fsprogs`, `dosfstools`,
-`util-linux`, `ntfs-3g`, `testdisk`/`photorec`, `rsync`, plus a Rust init. It has **no**
+`util-linux`, `ntfs-3g`, `testdisk`, `rsync`, plus a Rust init. It has **no**
 `systemctl`, `journalctl`, `dracut`, `mkinitcpio`, `apt`,
 `pacman`, `dpkg`, or other normal Linux distro tool. Every repair against *other* system
 is follows the same pattern:

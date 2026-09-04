@@ -9,16 +9,17 @@ the steps below:**
 ```bash
 busybox --list
 lk -w command-name
-which command-name
+lk -l /bin
 ```
 
 `/bin` should already contain the statically-built recovery tools from all of the
-above. Note that `mount`, `umount`, `fdisk`, `sfdisk`, `lsblk`, `blkid`, `findmnt`,
-`swapon`, `swapoff`, `mkswap`, `blockdev`, and `fsck` are now using `util-linux`
-binaries, not from `busybox`. `busybox` own copies of these (and of `ls`, `mount`,
-`umount`, `cp`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln` are now covered by lk) were
-removed from the image to avoid two different implementations of the same command. If
-`busybox --list` doesn't show one of those, that's expected, use the real one directly.
+above. Note that `mount`, `umount`, `fdisk`, `cfdisk`, `sfdisk`, `lsblk`, `blkid`,
+`findmnt`, `swapon`, `swapoff`, `mkswap`, `blockdev`, and `fsck` are now using
+`util-linux` binaries, not from `busybox`. `busybox` own copies of these (and of `ls`,
+`mount`, `umount`, `cp`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln` are now covered
+by `lk`) were removed from the image to avoid two different implementations of the
+same command. If `busybox --list` doesn't show one of those, that's expected, use
+the real one directly.
 
 ## 2. Search the target partition layout
 
@@ -30,6 +31,12 @@ After found the target, check it with `fdisk`:
 
 ```bash
 fdisk -l /dev/sda1
+```
+
+For an interactive partition editor, use:
+
+```bash
+cfdisk /dev/sda
 ```
 
 ## 3. Corrupt partition table
@@ -67,7 +74,7 @@ Fox). The bundled `fsck` (from `util-linux`) is now also the real frontend, so
 not call `e2fsck` directly.
 
 ```bash
-lk --umount /dev/sda2 2>/dev/null
+umount /dev/sda2 2>/dev/null
 e2fsck -f -y /dev/sda2
 ```
 
@@ -78,14 +85,14 @@ data loss regardless of the tool used).
 For `vfat` or EFI System Partitions:
 
 ```bash
-lk --umount /dev/sda1 2>/dev/null
+umount /dev/sda1 2>/dev/null
 fsck.vfat -a /dev/sda1
 ```
 
 For `ntfs`:
 
 ```bash
-lk --umount /dev/sda1 2>/dev/null
+umount /dev/sda1 2>/dev/null
 ntfsfix /dev/sda1
 ```
 
@@ -95,6 +102,15 @@ Windows will run its own `chkdsk` cleanly on next boot, or so the volume
 mounts read-write again. For real bad-sector or deep-corruption analysis,
 that has to happen from Windows itself, Black Fox's goal here is just to
 get the volume mountable again.
+
+For XFS, Btrfs, or F2FS, use the filesystem-specific tools:
+
+```bash
+umount /dev/sda2 2>/dev/null
+xfs_repair /dev/sda2       # XFS
+btrfs check /dev/sda2      # Btrfs; inspect before using --repair
+fsck.f2fs /dev/sda2        # F2FS
+```
 
 ## 5. Resizing a filesystem
 
@@ -123,6 +139,9 @@ and reports whether shrinking is safe before actually resizing anything.
 mke2fs -t ext4 /dev/sda3     # ext4, with journaling and extents
 mkfs.vfat -F 32 /dev/sda4    # FAT32
 mkntfs -f /dev/sda5          # NTFS (mkfs.ntfs also works, same binary)
+mkfs.xfs /dev/sda6           # XFS
+mkfs.btrfs /dev/sda7         # Btrfs
+mkfs.f2fs /dev/sda8         # F2FS
 ```
 
 ## 7. Inspecting filesystem details

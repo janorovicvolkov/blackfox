@@ -30,16 +30,8 @@ Black Fox `busybox` only has the applets enabled in its build config. Check it
 in your Black Fox shell:
 
 ```bash
-# If from busybox:
 busybox --list
-# Else:
-# From "lk -w"
 lk -w command-name
-# Busybox which tool
-which command-name
-# Busybox ls
-ls /bin
-# From "lk -l /bin" for detailed information (executable or not)
 lk -l /bin
 ```
 

@@ -18,7 +18,6 @@
 - `autoconf`
 - `automake`
 - `libtool`
-- `ncurses` (`libncurses-dev` in Debian or Ubuntu based)
 - `libjpeg` (`libjpeg-dev` in Debian or Ubuntu based)
 - `zlib` (`zlib1g-dev` in Debian or Ubuntu based)
 - `e2fsprogs` (`libext2fs-dev` in Debian or Ubuntu based)
@@ -32,7 +31,8 @@ make all
 ```
 
 Builds everything: `kernel`, `busybox`, `init`, the static recovery tools
-(`e2fsprogs`, `dosfstools`, `lk`, `util-linux`, `ntfs-3g`, `testdisk`,
+(`e2fsprogs`, `dosfstools`, `lk`, `ncurses`, `util-linux`, `xfsprogs`,
+`btrfs-progs`, `f2fs-tools`, `ntfs-3g`, `testdisk`,
 `rsync`), assembles the rootfs, then packs it into a
 squashfs and a bootable ISO.
 
@@ -72,10 +72,18 @@ binary that becomes PID 1.
 
 ### `tools`
 
-Runs `e2fsprogs-tool`, `dosfstools-tool`, `lk-tool`, `util-linux-tool`, `ntfs3g-tool`,
+Runs `e2fsprogs-tool`, `dosfstools-tool`, `lk-tool`, `ncurses-tool`,
+`util-linux-tool`, `xfsprogs-tool`, `btrfs-progs-tool`, `f2fs-tools-tool`, `ntfs3g-tool`,
 `testdisk-tool`, and `rsync-tool`. See [Extending Tools](Extending-Tools.md) for what
 each one produces and how to pin or bump their versions (`E2FSPROGS_VERSION`,
-`DOSFSTOOLS_VERSION`, `LK_VERSION`, `UTIL_LINUX_VERSION`, `NTFS3G_VERSION`, `TESTDISK_VERSION`, `RSYNC_VERSION`).
+`DOSFSTOOLS_VERSION`, `LK_VERSION`, `NCURSES_VERSION`, `UTIL_LINUX_VERSION`,
+`XFSPROGS_VERSION`, `BTRFSPROGS_VERSION`, `F2FS_TOOLS_VERSION`, `NTFS3G_VERSION`,
+`TESTDISK_VERSION`, `RSYNC_VERSION`).
+
+`ncurses-tool` builds a static wide-character ncurses library first because
+`cfdisk` needs it. `util-linux-tool` then builds static `cfdisk`, `mount`,
+`umount`, and the other selected util-linux commands. The staged ncurses
+library is used only during the build and is not copied into the image.
 
 Because `busybox` own copies of `mount`, `cp`, etc. are compiled out (see above), 
 rootfs depends on tools running first, always build through `make all` or `make rootfs`
