@@ -2,8 +2,9 @@
 
 ## 1. Check the required tools
 
-Because Black Fox is currently bundles `busybox`, `lk`, `e2fsprogs`, `dosfstools`,
-`util-linux`, `ntfs-3g`, `testdisk`, and `rsync`. **Always check before following
+Because Black Fox currently bundles `busybox`, `lk`, `e2fsprogs`, `dosfstools`,
+`util-linux`, `ntfs-3g`, `testdisk`, `rsync`, `ddrescue`, `smartctl`, `mdadm`,
+GPT fdisk, and exFAT tools. **Always check before following
 the steps below:**
 
 ```bash
@@ -20,6 +21,24 @@ above. Note that `mount`, `umount`, `fdisk`, `cfdisk`, `sfdisk`, `lsblk`, `blkid
 by `lk`) were removed from the image to avoid two different implementations of the
 same command. If `busybox --list` doesn't show one of those, that's expected, use
 the real one directly.
+
+For a disk that is failing or producing I/O errors, image it before attempting
+repairs. `ddrescue` can resume interrupted copies and records bad areas in a
+mapfile:
+
+```bash
+ddrescue --force --no-scrape /dev/sdX /mnt/backup/disk.img /mnt/backup/disk.map
+ddrescue --direct --retry-passes=3 /dev/sdX /mnt/backup/disk.img /mnt/backup/disk.map
+```
+
+Check drive health first when SMART is available:
+
+```bash
+smartctl --all /dev/sdX
+smartctl --test=short /dev/sdX
+```
+
+Use the image and its mapfile for subsequent recovery whenever possible.
 
 ## 2. Search the target partition layout
 
@@ -108,7 +127,7 @@ For XFS, Btrfs, or F2FS, use the filesystem-specific tools:
 ```bash
 umount /dev/sda2 2>/dev/null
 xfs_repair /dev/sda2       # XFS
-btrfs check /dev/sda2      # Btrfs; inspect before using --repair
+btrfs check /dev/sda2      # Btrfs
 fsck.f2fs /dev/sda2        # F2FS
 ```
 

@@ -31,6 +31,11 @@ Statically builds and installs into `/bin`:
 - `ntfs-3g`, `mount.ntfs`, `mount.ntfs-3g`, `ntfsfix`, `ntfsresize`, `ntfsclone`, `ntfslabel`, `mkntfs`, `mkfs.ntfs`: from `ntfs-3g` (`NTFS3G_VERSION` in the `Makefile`, default 2026.7.7), built with its internal FUSE so there's no libfuse or FUSE-module dependency at runtime.
 - `testdisk`, `photorec`: From `testdisk` (`TESTDISK_VERSION` in the `Makefile`, default 7.2).
 - `rsync`: From `rsync` (`RSYNC_VERSION` in the `Makefile`, default 3.5.0), built without OpenSSL, lz4, xxHash, or zstd to keep its dependency footprint small.
+- `ddrescue`: From GNU ddrescue (`DDRESCUE_VERSION`, default 1.29), for resumable imaging of failing disks.
+- `smartctl`: From smartmontools (`SMARTMONTOOLS_VERSION`, default 7.4), for SMART health and device diagnostics.
+- `mdadm`: From mdadm (`MDADM_VERSION`, default 4.3), for Linux software RAID assembly and maintenance.
+- `sgdisk`: From GPT fdisk (`GDISK_VERSION`, default 1.0.10), for noninteractive GPT inspection and repair.
+- `mkfs.exfat`, `fsck.exfat`, `dump.exfat`: From exfatprogs (`EXFATPROGS_VERSION`, default 1.2.9), for exFAT creation, checking, and inspection.
 
 This runs automatically as part of `make all` or `make rootfs`. You can bump
 the versions with:

@@ -1,0 +1,19 @@
+#!/bin/sh
+exec tail -n +3 $0
+
+# Black Fox rescue entry.
+# This layout assumes the files are stored in /boot on the filesystem
+# searched by GRUB:
+#   /boot/blackfox
+#   /boot/blackfox.sfs
+menuentry "Black Fox Rescue" {
+    search --no-floppy --file --set=root /boot/blackfox
+    linux  /boot/blackfox root=/dev/ram0 rootfstype=squashfs ramdisk_size=262144 console=tty0 console=ttyS0
+    initrd /boot/blackfox.sfs
+}
+
+# If /boot is a separate partition and the files are copied to its top level,
+# use these paths instead:
+#   search --no-floppy --file --set=root /blackfox
+#   linux  /blackfox root=/dev/ram0 rootfstype=squashfs ramdisk_size=262144 console=tty0 console=ttyS0
+#   initrd /blackfox.sfs

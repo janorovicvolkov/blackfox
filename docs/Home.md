@@ -1,4 +1,4 @@
-# Black Fox Build Docs
+<h1><center>Black Fox Build Docs</center></h1>
 
 This is **build-time** documentation: how to compile the `kernel`, `busybox`,
 `init`, and the bundled recovery tools, and how to extend the image with

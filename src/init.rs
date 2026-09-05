@@ -58,8 +58,8 @@ fn banner() {
     println!("");
     println!("Black Fox: \"What should we fix today, admin?\"");
     println!("");
-    println!("> Note: This is a minimal recovery shell. Only a critical commands are available.");
-    println!("> Help: Type \"which\" to check if a command exists.");
+    println!("> Note: This is a minimal recovery shell. Only critical commands are available.");
+    println!("> Help: Type \"lk -w\" to check if a command exists.");
     println!("");
     print!("{RESET}");
 }
@@ -103,7 +103,7 @@ fn main() {
         .current_dir("/admin")
         .exec();
     ui::error(&format!(
-        "FATAL: Failed to execute bash shell! Err: {}",
+        "FATAL: Failed to execute BusyBox shell! Err: {}",
         err
     ));
     ui::error("Halting system to prevent kernel panic!");

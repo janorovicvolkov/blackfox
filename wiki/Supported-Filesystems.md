@@ -4,7 +4,8 @@
 |---|---|---|
 | `squashfs`             | <p style="color:green">Support</p>          | - |
 | `ext` (`2`, `3`, `4`)  | <p style="color:green">Support</p>          | - |
-| `vfat` (`fat32`)       | <p style="color:green">Support</p>          | - |
+| `vfat`                 | <p style="color:green">Support</p>          | - |
+| `exfat`                | <p style="color:green">Support</p>          | - |
 | `btrfs`                | <p style="color:green">Support</p>          | - |
 | `xfs`                  | <p style="color:green">Support</p>          | - |
 | `f2fs`                 | <p style="color:green">Support</p>          | - |
@@ -18,8 +19,13 @@
 | `gpt`                  | <p style="color:green">Support</p>          | - |
 | `mbr`                  | <p style="color:green">Support</p>          | - |
 
-So the Black Fox kernel can already read and write `ext4`, `vfat`, `btrfs`, `xfs`, `f2fs`
-and `ntfs` partitions directly, and it understands GPT or MBR disks and device-mapper
+| Storage feature | Supported? | Note |
+|---|---|---|
+| `linux md raid` | <p style="color:green">Support</p> | Kernel personalities and `mdadm` bundled |
+
+So the Black Fox kernel can already read and write `ext`, `vfat`, `exfat`, `btrfs`, `xfs`,
+`f2fs` and `ntfs` partitions directly, and it understands GPT or MBR disks, MD software
+RAID, and device-mapper
 volumes. Static userspace tools for XFS (`xfsprogs`), Btrfs (`btrfs-progs`), and F2FS
 (`f2fs-tools`) are also bundled for creation, checking, inspection, and repair.
 `ntfs-3g` is also bundled as a userspace fallback for mounting `ntfs` and for

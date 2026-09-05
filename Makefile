@@ -12,6 +12,11 @@ RSYNC_VERSION      ?= 3.5.0
 XFSPROGS_VERSION   ?= 7.1.1
 BTRFSPROGS_VERSION ?= 7.1
 F2FS_TOOLS_VERSION ?= 1.16.0
+DDRESCUE_VERSION    ?= 1.29
+SMARTMONTOOLS_VERSION ?= 7.4
+MDADM_VERSION       ?= 4.3
+GDISK_VERSION       ?= 1.0.10
+EXFATPROGS_VERSION  ?= 1.2.9
 INIH_VERSION       ?= r58
 ZLIB_VERSION       ?= 1.3.1
 URCU_VERSION       ?= 0.15.0
@@ -65,6 +70,21 @@ BTRFSPROGS_URL  := https://github.com/kdave/btrfs-progs/archive/refs/tags/v$(BTR
 F2FS_TOOLS_SRC  := $(BUILD_DIR)/f2fs-tools-$(F2FS_TOOLS_VERSION)
 F2FS_TOOLS_TAR  := f2fs-tools-$(F2FS_TOOLS_VERSION).tar.gz
 F2FS_TOOLS_URL  := https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git/snapshot/f2fs-tools-$(F2FS_TOOLS_VERSION).tar.gz
+DDRESCUE_SRC    := $(BUILD_DIR)/ddrescue-$(DDRESCUE_VERSION)
+DDRESCUE_TAR    := ddrescue-$(DDRESCUE_VERSION).tar.lz
+DDRESCUE_URL    := https://ftp.gnu.org/gnu/ddrescue/$(DDRESCUE_TAR)
+SMARTMONTOOLS_SRC := $(BUILD_DIR)/smartmontools-$(SMARTMONTOOLS_VERSION)
+SMARTMONTOOLS_TAR := smartmontools-$(SMARTMONTOOLS_VERSION).tar.gz
+SMARTMONTOOLS_URL := https://github.com/smartmontools/smartmontools/releases/download/RELEASE_$(subst .,_,$(SMARTMONTOOLS_VERSION))/$(SMARTMONTOOLS_TAR)
+MDADM_SRC       := $(BUILD_DIR)/mdadm-$(MDADM_VERSION)
+MDADM_TAR       := mdadm-$(MDADM_VERSION).tar.xz
+MDADM_URL       := https://www.kernel.org/pub/linux/utils/raid/mdadm/$(MDADM_TAR)
+GDISK_SRC       := $(BUILD_DIR)/gptfdisk-$(GDISK_VERSION)
+GDISK_TAR       := gptfdisk-$(GDISK_VERSION).tar.gz
+GDISK_URL       := https://sourceforge.net/projects/gptfdisk/files/gptfdisk/$(GDISK_VERSION)/$(GDISK_TAR)/download
+EXFATPROGS_SRC  := $(BUILD_DIR)/exfatprogs-$(EXFATPROGS_VERSION)
+EXFATPROGS_TAR  := exfatprogs-$(EXFATPROGS_VERSION).tar.xz
+EXFATPROGS_URL  := https://github.com/exfatprogs/exfatprogs/releases/download/$(EXFATPROGS_VERSION)/$(EXFATPROGS_TAR)
 INIH_SRC        := $(BUILD_DIR)/inih-$(INIH_VERSION)
 INIH_TAR        := inih-$(INIH_VERSION).tar.gz
 INIH_URL        := https://github.com/benhoyt/inih/archive/refs/tags/$(INIH_VERSION).tar.gz
@@ -84,7 +104,7 @@ RAMDISK_SIZE    ?= 262144
 
 NPROC := $(shell nproc)
 
-.PHONY: all kernel busybox init fox-tool tools lk-tool ncurses-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool inih-tool zlib-tool urcu-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool rootfs squashfs iso run test clean cleanall
+.PHONY: all kernel busybox init fox-tool tools lk-tool ncurses-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool ddrescue-tool smartmontools-tool mdadm-tool gdisk-tool exfatprogs-tool inih-tool zlib-tool urcu-tool rootfs squashfs iso run test clean cleanall
 
 all: iso
 
@@ -194,7 +214,7 @@ fox-tool:
 # configs/kernel.config. See docs/Extending-Tools.md for manual
 # static-build instructions if you need those userspace tools too.
 
-tools: cleanall e2fsprogs-tool dosfstools-tool fox-tool lk-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool
+tools: e2fsprogs-tool dosfstools-tool fox-tool lk-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool ddrescue-tool smartmontools-tool mdadm-tool gdisk-tool exfatprogs-tool
 	file $(OUT_DIR)/tools/*
 
 e2fsprogs-tool:
@@ -229,6 +249,70 @@ dosfstools-tool:
 	cp $(DOSFSTOOLS_SRC)/src/mkfs.fat $(OUT_DIR)/tools/mkfs.fat
 	strip $(OUT_DIR)/tools/* 2>/dev/null || true
 	chmod +x $(OUT_DIR)/tools/*
+
+ddrescue-tool:
+	mkdir -p $(BUILD_DIR)
+	wget -O $(BUILD_DIR)/$(DDRESCUE_TAR) $(DDRESCUE_URL)
+	tar xf $(BUILD_DIR)/$(DDRESCUE_TAR) -C $(BUILD_DIR)
+	cd $(DDRESCUE_SRC) && ./configure CXX=g++ CXXFLAGS="-O2 -static-libstdc++ -static-libgcc" LDFLAGS="-static"
+	$(MAKE) -C $(DDRESCUE_SRC) -j$(NPROC) CXX=g++ CXXFLAGS="-O2 -static-libstdc++ -static-libgcc" LDFLAGS="-static"
+	mkdir -p $(OUT_DIR)/tools
+	cp $(DDRESCUE_SRC)/ddrescue $(OUT_DIR)/tools/ddrescue
+	strip $(OUT_DIR)/tools/ddrescue 2>/dev/null || true
+	chmod +x $(OUT_DIR)/tools/ddrescue
+
+smartmontools-tool:
+	mkdir -p $(BUILD_DIR)
+	wget -O $(BUILD_DIR)/$(SMARTMONTOOLS_TAR) $(SMARTMONTOOLS_URL)
+	tar xf $(BUILD_DIR)/$(SMARTMONTOOLS_TAR) -C $(BUILD_DIR)
+	cd $(SMARTMONTOOLS_SRC) && ./configure --disable-shared --enable-static --without-update-smart-drivedb \
+		CXX=g++ CXXFLAGS="-O2 -static-libstdc++ -static-libgcc" LDFLAGS="-static"
+	$(MAKE) -C $(SMARTMONTOOLS_SRC) -j$(NPROC) CXX=g++ CXXFLAGS="-O2 -static-libstdc++ -static-libgcc" LDFLAGS="-static"
+	mkdir -p $(OUT_DIR)/tools
+	cp $(SMARTMONTOOLS_SRC)/smartctl $(OUT_DIR)/tools/smartctl
+	strip $(OUT_DIR)/tools/smartctl 2>/dev/null || true
+	chmod +x $(OUT_DIR)/tools/smartctl
+
+mdadm-tool:
+	mkdir -p $(BUILD_DIR)
+	wget -O $(BUILD_DIR)/$(MDADM_TAR) $(MDADM_URL)
+	tar xf $(BUILD_DIR)/$(MDADM_TAR) -C $(BUILD_DIR)
+	sed -i 's|#include[[:space:]]*<libudev.h>|#ifndef NO_LIBUDEV\n#include <libudev.h>\n#endif|' $(MDADM_SRC)/udev.c
+	$(MAKE) -C $(MDADM_SRC) -j$(NPROC) CC=musl-gcc CWFLAGS= \
+		CXFLAGS="-O2 -static -D_LARGEFILE64_SOURCE -DNO_COROSYNC -DNO_DLM -DNO_LIBUDEV -include limits.h -include libgen.h -include linux/falloc.h" \
+		LDFLAGS="-static" LDLIBS="-ldl" mdadm.static
+	mkdir -p $(OUT_DIR)/tools
+	cp $(MDADM_SRC)/mdadm.static $(OUT_DIR)/tools/mdadm
+	strip $(OUT_DIR)/tools/mdadm 2>/dev/null || true
+	chmod +x $(OUT_DIR)/tools/mdadm
+
+gdisk-tool: util-linux-tool
+	mkdir -p $(BUILD_DIR)
+	wget -O $(BUILD_DIR)/$(GDISK_TAR) $(GDISK_URL)
+	tar xf $(BUILD_DIR)/$(GDISK_TAR) -C $(BUILD_DIR)
+	$(MAKE) -C $(GDISK_SRC) -j$(NPROC) TARGET=linux CXX=g++ \
+		CXXFLAGS="-O2 -static-libstdc++ -static-libgcc -D_FILE_OFFSET_BITS=64" \
+		LDFLAGS="-static -L$(UTIL_LINUX_SRC)/.libs" sgdisk
+	mkdir -p $(OUT_DIR)/tools
+	cp $(GDISK_SRC)/sgdisk $(OUT_DIR)/tools/sgdisk
+	strip $(OUT_DIR)/tools/sgdisk 2>/dev/null || true
+	chmod +x $(OUT_DIR)/tools/sgdisk
+
+exfatprogs-tool:
+	mkdir -p $(BUILD_DIR)
+	wget -O $(BUILD_DIR)/$(EXFATPROGS_TAR) $(EXFATPROGS_URL)
+	tar xf $(BUILD_DIR)/$(EXFATPROGS_TAR) -C $(BUILD_DIR)
+	cd $(EXFATPROGS_SRC) && CC=musl-gcc ./configure --disable-shared --enable-static \
+		CFLAGS="-O2 -fno-pie" LDFLAGS="-static -no-pie"
+	$(MAKE) -C $(EXFATPROGS_SRC) clean 2>/dev/null || true
+	$(MAKE) -C $(EXFATPROGS_SRC) -j$(NPROC) CC=musl-gcc CFLAGS="-O2 -fno-pie" \
+		LDFLAGS="-all-static -static -no-pie"
+	mkdir -p $(OUT_DIR)/tools
+	cp $(EXFATPROGS_SRC)/mkfs/mkfs.exfat $(OUT_DIR)/tools/mkfs.exfat
+	cp $(EXFATPROGS_SRC)/fsck/fsck.exfat $(OUT_DIR)/tools/fsck.exfat
+	cp $(EXFATPROGS_SRC)/dump/dump.exfat $(OUT_DIR)/tools/dump.exfat
+	strip $(OUT_DIR)/tools/mkfs.exfat $(OUT_DIR)/tools/fsck.exfat $(OUT_DIR)/tools/dump.exfat 2>/dev/null || true
+	chmod +x $(OUT_DIR)/tools/mkfs.exfat $(OUT_DIR)/tools/fsck.exfat $(OUT_DIR)/tools/dump.exfat
 
 lk-tool:
 	mkdir -p $(BUILD_DIR)
@@ -473,7 +557,8 @@ run:
 	qemu-system-x86_64 \
 	  -kernel $(KERNEL_OUT) \
 	  -initrd $(SFS_OUT) \
-	  -append "root=/dev/ram0 rootfstype=squashfs ramdisk_size=$(RAMDISK_SIZE) console=ttyS0 quiet" \
+	  -append "root=/dev/ram0 rootfstype=squashfs ramdisk_size=$(RAMDISK_SIZE) console=tty0 console=ttyS0 quiet" \
+	  -vga std \
 	  -m 512M
 
 test:

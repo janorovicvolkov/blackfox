@@ -3,20 +3,22 @@
 ## What Black Fox HAS
 
 - Linux kernel.
-- Static BusyBox. Since this uses `defconfig` (not a hand-picked minimal config),
-  most standard BusyBox applets are available. Check the exact list with:
+- Static BusyBox. Since this starts from `defconfig` and then disables applets
+  replaced by bundled recovery tools, the exact `busybox` applet set can change.
+  Check it with:
   ```bash
   busybox --list
   ```
   from inside Black Fox shell since the applet set can change if Black Fox updated
   again later.
-- A custom `init` (`src/main.rs`, using the `liblk` and `nix` crate) as 
-  PID 1, mounts pseudo-filesystems, `chdir` into `/admin`, then `exec` into
-  `busybox sh` or `lk --shell` as fallback.
+- A custom `init` (`src/init.rs`, using the `liblk` and `nix` crates) as
+  PID 1, mounts pseudo-filesystems, changes directory to `/admin`, then
+  `exec`s into `busybox sh`.
 - Static recovery tools in `/bin`, built automatically by `make tools`: e2fsprogs,
   dosfstools, `lk`, util-linux (`fdisk`, `cfdisk`, `mount`, `umount`, `sfdisk`,
   `findmnt`, `blkid`, and filesystem helpers), XFS tools, Btrfs tools, F2FS tools,
-  ntfs-3g, testdisk, photorec, and rsync. See also [Fixing Disks and Partitions](Fixing-Disks-and-Partitions.md).
+  ntfs-3g, testdisk, photorec, rsync, `ddrescue`, `smartctl`, `mdadm`, GPT fdisk,
+  and exFAT tools. See also [Fixing Disks and Partitions](Fixing-Disks-and-Partitions.md).
 - Directory layout:
 ```bash
 /

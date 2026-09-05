@@ -2,8 +2,9 @@
 
 ## 1. Check the required tools
 
-Because Black Fox is currently bundles `busybox`, `lk`, `e2fsprogs`, `dosfstools`,
-`util-linux`, `ntfs-3g`, `testdisk`, and `rsync`. **Always check before following
+Because Black Fox currently bundles `busybox`, `lk`, `e2fsprogs`, `dosfstools`,
+`util-linux`, `ntfs-3g`, `testdisk`, `rsync`, `ddrescue`, `smartctl`, `mdadm`,
+GPT fdisk, and exFAT tools. **Always check before following
 the steps below:**
 
 ```bash
@@ -44,8 +45,8 @@ If `/boot` is a separate partition:
 mount /dev/sda1 /mnt/boot vfat
 ```
 
-> ***NOTE:** If the target's filesystem isn't `btrfs`, `ext4`, `f2fs`, `ntfs3`, `vfat`,
-> or `xfs`, the mount command will fail. See [Supported Filesystems](Supported-Filesystems.md)
+> ***NOTE:** If the target's filesystem isn't `btrfs`, `ext` (`2`, `3`, `4`), `f2fs`, `ntfs3`, `vfat`,
+> `exfat`, or `xfs`, the mount command will fail. See [Supported Filesystems](Supported-Filesystems.md)
 > for covered filesystems list.*
 
 ## 4. Bind-mount Black Fox's pseudo-filesystems into the target

@@ -8,8 +8,10 @@
 - `make`
 - `wget`
 - `tar`
+- `lzip` (for GNU ddrescue)
 - `xz`
 - C toolchain (`gcc` + `binutils`)
+- C++ toolchain (`g++` with static libstdc++/libgcc support)
 - `mksquashfs`
 - GRUB toolchain (`grub-mkrescue` + `xorriso`)
 - `qemu-system-x86_64`
@@ -33,7 +35,8 @@ make all
 Builds everything: `kernel`, `busybox`, `init`, the static recovery tools
 (`e2fsprogs`, `dosfstools`, `lk`, `ncurses`, `util-linux`, `xfsprogs`,
 `btrfs-progs`, `f2fs-tools`, `ntfs-3g`, `testdisk`,
-`rsync`), assembles the rootfs, then packs it into a
+`rsync`, `ddrescue`, `smartmontools`, `mdadm`, `gdisk`, `exfatprogs`),
+assembles the rootfs, then packs it into a
 squashfs and a bootable ISO.
 
 Or run each stage individually:
@@ -58,7 +61,7 @@ starts from `tinyconfig`, merges in `configs/kernel.config`, then builds `bzImag
 
 ### `busybox`
 
-Downloads BusyBox (`BUSYBOX_VERSION`), configures with `make defconfig`, forces
+Downloads `busybox` (`BUSYBOX_VERSION`), configures with `make defconfig`, forces
 `CONFIG_STATIC=y`, disables `CONFIG_TC`, and disables the applets now provided by `lk`
 and `util-linux` (`ls`, `cp`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln`, `mount`,
 `umount`, `losetup`, `blkid`, `lsblk`, `fdisk`, `swapon`, `swapoff`, `mkswap`, `blockdev`,
@@ -66,7 +69,7 @@ and `util-linux` (`ls`, `cp`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln`, `moun
 
 ### `init`
 
-Cross-compiles the project's own Rust `init` (`src/main.rs`, built on the
+Cross-compiles the project's own Rust `init` (`src/init.rs`, built on the
 `liblk` crate) to `x86_64-unknown-linux-musl`, producing a single static
 binary that becomes PID 1.
 
@@ -74,11 +77,13 @@ binary that becomes PID 1.
 
 Runs `e2fsprogs-tool`, `dosfstools-tool`, `lk-tool`, `ncurses-tool`,
 `util-linux-tool`, `xfsprogs-tool`, `btrfs-progs-tool`, `f2fs-tools-tool`, `ntfs3g-tool`,
-`testdisk-tool`, and `rsync-tool`. See [Extending Tools](Extending-Tools.md) for what
+`testdisk-tool`, `rsync-tool`, `ddrescue-tool`, `smartmontools-tool`, `mdadm-tool`,
+`gdisk-tool`, and `exfatprogs-tool`. See [Extending Tools](Extending-Tools.md) for what
 each one produces and how to pin or bump their versions (`E2FSPROGS_VERSION`,
 `DOSFSTOOLS_VERSION`, `LK_VERSION`, `NCURSES_VERSION`, `UTIL_LINUX_VERSION`,
 `XFSPROGS_VERSION`, `BTRFSPROGS_VERSION`, `F2FS_TOOLS_VERSION`, `NTFS3G_VERSION`,
-`TESTDISK_VERSION`, `RSYNC_VERSION`).
+`TESTDISK_VERSION`, `RSYNC_VERSION`, `DDRESCUE_VERSION`, `SMARTMONTOOLS_VERSION`,
+`MDADM_VERSION`, `GDISK_VERSION`, and `EXFATPROGS_VERSION`).
 
 `ncurses-tool` builds a static wide-character ncurses library first because
 `cfdisk` needs it. `util-linux-tool` then builds static `cfdisk`, `mount`,
@@ -108,6 +113,24 @@ drops in `init`.
 
 Packs the rootfs into `out/blackfox.sfs`, then assembles a GRUB-bootable ISO
 at `out/blackfox.iso` using `configs/grub.cfg`.
+
+To add Black Fox to an existing GRUB installation, copy the kernel and squashfs
+to `/boot`, then copy [40_custom.blackfox](40_custom.blackfox) to
+`/etc/grub.d/40_custom` or merge its `menuentry` into that file. Make the file
+executable and regenerate GRUB:
+
+```bash
+sudo cp out/blackfox /boot/blackfox
+sudo cp out/blackfox.sfs /boot/blackfox.sfs
+sudo cp docs/40_custom.blackfox /etc/grub.d/40_blackfox
+sudo chmod +x /etc/grub.d/40_blackfox
+sudo update-grub
+```
+
+The provided entry searches for `/boot/blackfox`. If `/boot` is a separate
+GRUB partition and the files are copied to its top level, use `/blackfox` and
+`/blackfox.sfs` in the entry instead. Verify the generated menu before
+rebooting and keep the existing OS entry available.
 
 ### `run` or `test`
 

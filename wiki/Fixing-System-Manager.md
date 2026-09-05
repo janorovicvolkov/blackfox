@@ -1,18 +1,98 @@
 # Fixing System Manager
 
 Black Fox has **no system manager of its own**. The commands below repair the
-installed operating system on the target disk; they do not manage Black Fox.
-Prepare the target with [Fixing Initramfs](Fixing-Initramfs.md) first, then run
-the target system's `systemctl`, `journalctl`, `rc-service`, or equivalent
-commands inside the chroot.
+installed operating system on the target disk, they do not manage Black Fox.
 
-## 1-5: Same as [Fixing Initramfs](Fixing-Initramfs.md)
+## 1. Check the required tools
 
-Check the required tools, identify the target root with `lk -P`, mount it at
-`/mnt`, mount any separate `/boot` or EFI partition, bind-mount `/proc`, `/sys`,
-and `/dev`, then enter the chroot. Bind `/run` only when the target's manager
-needs a live runtime directory; do not confuse Black Fox's shell with the
-target's shell after `chroot /mnt`.
+Because Black Fox currently bundles `busybox`, `lk`, `e2fsprogs`, `dosfstools`,
+`util-linux`, `ntfs-3g`, `testdisk`, `rsync`, `ddrescue`, `smartctl`, `mdadm`,
+GPT fdisk, and exFAT tools. **Always check before following
+the steps below:**
+
+```bash
+busybox --list
+lk -w command-name
+lk -l /bin
+```
+
+`/bin` should already contain the statically-built recovery tools from all of the
+above. Note that `mount`, `umount`, `fdisk`, `cfdisk`, `sfdisk`, `lsblk`, `blkid`,
+`findmnt`, `swapon`, `swapoff`, `mkswap`, `blockdev`, and `fsck` are now using
+`util-linux` binaries, not from `busybox`. `busybox` own copies of these (and of `ls`,
+`mount`, `umount`, `cp`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln` are now covered
+by `lk`) were removed from the image to avoid two different implementations of the
+same command. If `busybox --list` doesn't show one of those, that's expected, use
+the real one directly.
+
+## 2. Identify the target partition
+
+```bash
+# see all detected block devices
+lk -P
+```
+
+> ***NOTE:** The target's root partition device, e.g. `/dev/sda2`, and its `/boot`
+> partition if separate (e.g. `/dev/sda1`). **NOT** the harddisk, e.g. `/dev/sda` or
+> `/dev/sdb`*
+
+## 3. Mount the target's root filesystem
+
+```bash
+mount /dev/sda2 /mnt ext4
+```
+
+If `/boot` is a separate partition:
+
+```bash
+mount /dev/sda1 /mnt/boot vfat
+```
+
+> ***NOTE:** If the target's filesystem isn't `btrfs`, `ext` (`2`, `3`, `4`), `f2fs`, `ntfs3`, `vfat`,
+> `exfat`, or `xfs`, the mount command will fail. See [Supported Filesystems](Supported-Filesystems.md)
+> for covered filesystems list.*
+
+## 4. Bind-mount Black Fox's pseudo-filesystems into the target
+
+**This is required**, without it many tools inside the chroot (including
+`dracut`, `mkinitcpio`, `grub-install`, etc) will fail because they need
+working `/proc`, `/sys`, `/dev` from the currently-running kernel
+(Black Fox), not from the target disk.
+
+```bash
+mount --bind /proc /mnt/proc
+mount --bind /sys  /mnt/sys
+mount --bind /dev  /mnt/dev
+```
+
+If `mount` doesn't support `--bind` (check with `mount --help`),
+use:
+
+```bash
+mount -o bind /proc /mnt/proc
+mount -o bind /sys  /mnt/sys
+mount -o bind /dev  /mnt/dev
+```
+
+## 5. Chroot into the target system
+
+```bash
+chroot /mnt /bin/bash
+```
+
+If the target doesn't have `/bin/bash` or `/bin/sh` (a minimal-based system), use
+whatever shell is available on the target:
+
+```bash
+chroot /mnt /bin/zsh
+```
+
+> ***WARNING:** Once inside the chroot, you're using binaries *belonging
+> to the target* (its dynamic linker, its libc, all its tools), not Black
+> Fox anymore. If `chroot` fails with `exec format error` or `No such file
+> or directory` even though the file clearly exists, this usually means the
+> target's CPU architecture differs from Black Fox's build (e.g. target is
+> `ARM64` or `aarch64` while Black Fox was built for `x86_64`).*
 
 Before making changes, save the relevant configuration and record the current
 state:
@@ -64,7 +144,7 @@ chroot /mnt /bin/sh
 ```
 
 Use this only when needed. A bind-mounted `/run` exposes Black Fox runtime
-state to the target; it does not start the target's system manager.
+state to the target, it does not start the target's system manager.
 
 ## 7. Read logs without a full boot
 

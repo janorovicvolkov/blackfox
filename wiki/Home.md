@@ -1,4 +1,4 @@
-# <center>Black Fox Wiki</center>
+<h1><center>Black Fox Wiki</center></h1>
 
 <center><strong>"Operating System Recovery that saves other Operating Systems"</strong></center><br><br>
 

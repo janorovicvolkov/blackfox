@@ -1,5 +1,5 @@
-# <center>Black Fox</center>
-<strong><center>"Operating System Recovery that saves other Operating Systems"</center></strong>
+<h1><center>Black Fox</center></h1>
+<strong><center>"Operating System Recovery that saves other Operating Systems"</center></strong><br><br>
 
 Black Fox is a minimal recovery-oriented Operating System intended for repairing or
 inspecting broken disk images, recovering files, and running maintenance tools in a
@@ -7,8 +7,9 @@ small trusted environment.
 
 ## Scope
 
-- Create a tiny Linux kernel and a BusyBox-only rootfs, packaged as a squashfs or initrd and ISO.
-- Provide a small Rust `init` program as the lightweight userland entrypoint, user utilities are delivered via BusyBox.
+- Create a tiny Linux kernel and a `busybox`-based recovery rootfs, packaged as a SquashFS initrd and ISO.
+- Provide a small Rust `init` program as the lightweight PID 1 entrypoint, `busybox` supplies the shell
+and base applets, while additional recovery utilities are bundled as static binaries.
 - Target use-cases: mount or inspect broken images, run recovery tools, and provide a consistent rescue environment.
 
 ## Quick features
@@ -20,7 +21,9 @@ small trusted environment.
   `partition listing`, `mount`, `umount`, and a built-in shell) built on the same
   `liblk` crate as Black Fox own `init`, plus `fox` (a small static terminal editor), util-linux (`fdisk`, `cfdisk`, `sfdisk`, `mount`, `umount`, `findmnt`, `swapon`, `blockdev`, `fsck`), filesystem tools for XFS, Btrfs, and F2FS, ntfs-3g (NTFS mount and
   repair), testdisk (partition and file recovery), and
-  rsync. See [Fixing Disks and Partitions](wiki/Fixing-Disks-and-Partitions.md) for
+  rsync, `ddrescue` for resumable failing-disk imaging, `smartctl` for disk-health
+  inspection, `mdadm` for Linux software RAID, and `sgdisk` for GPT recovery,
+  and `mkfs.exfat`/`fsck.exfat`/`dump.exfat` for exFAT. See [Fixing Disks and Partitions](wiki/Fixing-Disks-and-Partitions.md) for
   more informations.
 - Produces: `out/blackfox.sfs` (squashfs initrd), `out/blackfox` (kernel image), and
   `out/blackfox.iso` (bootable ISO).
@@ -31,8 +34,10 @@ small trusted environment.
 - `make`
 - `wget`
 - `tar`
+- `lzip` (for the GNU ddrescue source archive)
 - `xz`
 - C toolchain (`gcc` + `binutils`)
+- C++ toolchain (`g++` with static libstdc++/libgcc support)
 - `mksquashfs`
 - GRUB toolchain (`grub-mkrescue` + `xorriso`)
 - `qemu-system-x86_64`
@@ -61,7 +66,7 @@ make all
 make init       # build Rust init
 make busybox    # download and build static busybox
 make kernel     # download and build kernel
-make tools      # download and statically recovery tools -> out/tools/<binaries>
+make tools      # download and statically build recovery tools -> out/tools/<binaries>
 make rootfs     # assemble root filesystem (installs out/tools/* into /bin)
 make squashfs   # create out/blackfox.sfs
 make iso        # create bootable ISO
@@ -71,7 +76,9 @@ See [Building](docs/Building.md) for what each target does in more detail.
 
 ## Testing the rootfs (without booting the kernel)
 
-- Blackfox userland is BusyBox-only. The project builds BusyBox statically and uses BusyBox to create all applet symlinks inside the rootfs `bin` directory.
+- Black Fox uses `busybox` for its shell and base applets. The project builds `busybox` statically and uses it
+to create applet symlinks inside the rootfs `bin` directory, additional recovery tools are installed there
+as separate static binaries.
 - Verify applets:
 
 ```bash
@@ -80,7 +87,8 @@ build/rootfs/bin/busybox --install -s build/rootfs/bin
 ls -l build/rootfs/bin | head
 ```
 
-- There is no need to create absolute or host symlinks into the `build/rootfs` tree, BusyBox will populate `bin` with the applet links used at runtime.
+- There is no need to create absolute or host symlinks into the `build/rootfs` tree, `busybox` will populate
+`bin` with the applet links used at runtime.
 - Spawn an interactive shell inside the rootfs:
 
 ```bash
@@ -100,9 +108,9 @@ make kernel
 
 ## Notes and troubleshooting
 
-- BusyBox should be built statically (`CONFIG_STATIC=y`) so it runs cleanly in the blackfox.sfs.
-- `/bin` (already on `$PATH`) is pre-populated with statically-built `e2fsck`, `resize2fs`, `mke2fs`, `dumpe2fs`, `tune2fs`, `fsck.vfat`, `mkfs.vfat`, `lk`, real util-linux (`mount`, `umount`, `fdisk`, `cfdisk`, `sfdisk`, `findmnt`, `swapon`/`swapoff`, `mkswap`, `blockdev`, `fsck`), XFS (`mkfs.xfs`, `xfs_repair`, `xfs_db`, `xfs_growfs`, `xfs_info`, `xfs_admin`), Btrfs (`btrfs`, `mkfs.btrfs`, `fsck.btrfs`), F2FS (`mkfs.f2fs`, `fsck.f2fs`, `dump.f2fs`, `resize.f2fs`, `sload.f2fs`), `ntfs-3g` (plus `ntfsfix`, `ntfsresize`, `ntfsclone`, `mkntfs`), `testdisk`/`photorec`, and `rsync` via `make tools`. See [Fixing Disks and Partitions](wiki/Fixing-Disks-and-Partitions.md) for usage. `/bin/others` itself is where you drop in *extra* tools you build by hand (see [Extending Tools](docs/Extending-Tools.md)).
-- BusyBox's own `ls`, `cp`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln`, `mount`, `umount`, `losetup`, `blkid`, `lsblk`, `fdisk`, `swapon`, `swapoff`, `mkswap`, `blockdev`, `fsck` applets are disabled in the `busybox` target `.config` (see [Extending Tools](docs/Extending-Tools.md)) so those commands only ever resolve to the `lk` or `util-linux` binaries above, not two clashing implementations. Because of this, always build through `make all` or `make rootfs` if `make tools` gets skipped, those commands won't exist at all.
+- `busybox` should be built statically (`CONFIG_STATIC=y`) so it runs cleanly in the blackfox.sfs.
+- `/bin` (already on `$PATH`) is pre-populated with statically-built filesystem, partition, imaging, health, and recovery tools via `make tools`, including `ddrescue`, `smartctl`, `mdadm`, `sgdisk`, `mkfs.exfat`, `fsck.exfat`, and `dump.exfat`. See [Fixing Disks and Partitions](wiki/Fixing-Disks-and-Partitions.md) for usage. `/bin/others` itself is where you drop in *extra* tools you build by hand (see [Extending Tools](docs/Extending-Tools.md)).
+- `busybox`'s own `ls`, `cp`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln`, `mount`, `umount`, `losetup`, `blkid`, `lsblk`, `fdisk`, `swapon`, `swapoff`, `mkswap`, `blockdev`, `fsck` applets are disabled in the `busybox` target `.config` (see [Extending Tools](docs/Extending-Tools.md)) so those commands only ever resolve to the `lk` or `util-linux` binaries above, not two clashing implementations. Because of this, always build through `make all` or `make rootfs` if `make tools` gets skipped, those commands won't exist at all.
 - Tool versions are pinned in the `Makefile`: `LK_VERSION` defaults to `main`, while `NCURSES_VERSION`, `UTIL_LINUX_VERSION`, `XFSPROGS_VERSION`, `BTRFSPROGS_VERSION`, `F2FS_TOOLS_VERSION`, `NTFS3G_VERSION`, `TESTDISK_VERSION`, and `RSYNC_VERSION` select the other tool sources. Set them explicitly for reproducible builds, for example `make tools LK_VERSION=v1.0.0`.
 - Inspect the squashfs with `unsquashfs -ll out/blackfox.sfs` or mount it as a loop device (requires root).
 - If you see kernel config warnings during `merge_config.sh`, confirm the desired options are enabled in `configs/kernel.config`.
