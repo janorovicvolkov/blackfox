@@ -286,7 +286,7 @@ mdadm-tool:
 	strip $(OUT_DIR)/tools/mdadm 2>/dev/null || true
 	chmod +x $(OUT_DIR)/tools/mdadm
 
-gdisk-tool: util-linux-tool
+gdisk-tool:
 	mkdir -p $(BUILD_DIR)
 	wget -O $(BUILD_DIR)/$(GDISK_TAR) $(GDISK_URL)
 	tar xf $(BUILD_DIR)/$(GDISK_TAR) -C $(BUILD_DIR)
