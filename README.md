@@ -7,7 +7,7 @@ small trusted environment.
 
 ## Scope
 
-- Create a tiny Linux kernel and a `busybox`-based recovery rootfs, packaged as a SquashFS initrd and ISO.
+- Create a tiny Linux kernel and a `busybox`-based recovery rootfs, packaged as a initramfs initrd and ISO.
 - Provide a small Rust `init` program as the lightweight PID 1 entrypoint, `busybox` supplies the shell
 and base applets, while additional recovery utilities are bundled as static binaries.
 - Target use-cases: mount or inspect broken images, run recovery tools, and provide a consistent rescue environment.
@@ -25,7 +25,7 @@ and base applets, while additional recovery utilities are bundled as static bina
   inspection, `mdadm` for Linux software RAID, and `sgdisk` for GPT recovery,
   and `mkfs.exfat`/`fsck.exfat`/`dump.exfat` for exFAT. See [Fixing Disks and Partitions](wiki/Fixing-Disks-and-Partitions.md) for
   more informations.
-- Produces: `out/blackfox.sfs` (squashfs initrd), `out/blackfox` (kernel image), and
+- Produces: `out/blackfox.img` (initramfs initrd), `out/blackfox` (kernel image), and
   `out/blackfox.iso` (bootable ISO).
 - `make test` runs QEMU in terminal-only mode while `make run` opens a VM window.
 
@@ -38,7 +38,7 @@ and base applets, while additional recovery utilities are bundled as static bina
 - `xz`
 - C toolchain (`gcc` + `binutils`)
 - C++ toolchain (`g++` with static libstdc++/libgcc support)
-- `mksquashfs`
+- `cpio`
 - GRUB toolchain (`grub-mkrescue` + `xorriso`)
 - `qemu-system-x86_64`
 - Rust toolchain (`rustup` + `cargo`)
@@ -54,7 +54,7 @@ and base applets, while additional recovery utilities are bundled as static bina
 
 ## Basic build steps
 
-1. Build everything (kernel, busybox, init, static recovery tools, rootfs, squashfs, iso):
+1. Build everything (kernel, initramfs, busybox, init, static recovery tools, iso):
 
 ```bash
 make all
@@ -67,8 +67,7 @@ make init       # build Rust init
 make busybox    # download and build static busybox
 make kernel     # download and build kernel
 make tools      # download and statically build recovery tools -> out/tools/<binaries>
-make rootfs     # assemble root filesystem (installs out/tools/* into /bin)
-make squashfs   # create out/blackfox.sfs
+make rootfs     # create out/blackfox.img
 make iso        # create bootable ISO
 ```
 
@@ -108,13 +107,11 @@ make kernel
 
 ## Notes and troubleshooting
 
-- `busybox` should be built statically (`CONFIG_STATIC=y`) so it runs cleanly in the blackfox.sfs.
+- `busybox` should be built statically (`CONFIG_STATIC=y`) so it runs cleanly in the blackfox.img.
 - `/bin` (already on `$PATH`) is pre-populated with statically-built filesystem, partition, imaging, health, and recovery tools via `make tools`, including `ddrescue`, `smartctl`, `mdadm`, `sgdisk`, `mkfs.exfat`, `fsck.exfat`, and `dump.exfat`. See [Fixing Disks and Partitions](wiki/Fixing-Disks-and-Partitions.md) for usage. `/bin/others` itself is where you drop in *extra* tools you build by hand (see [Extending Tools](docs/Extending-Tools.md)).
 - `busybox`'s own `ls`, `cp`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln`, `mount`, `umount`, `losetup`, `blkid`, `lsblk`, `fdisk`, `swapon`, `swapoff`, `mkswap`, `blockdev`, `fsck` applets are disabled in the `busybox` target `.config` (see [Extending Tools](docs/Extending-Tools.md)) so those commands only ever resolve to the `lk` or `util-linux` binaries above, not two clashing implementations. Because of this, always build through `make all` or `make rootfs` if `make tools` gets skipped, those commands won't exist at all.
 - Tool versions are pinned in the `Makefile`: `LK_VERSION` defaults to `main`, while `NCURSES_VERSION`, `UTIL_LINUX_VERSION`, `XFSPROGS_VERSION`, `BTRFSPROGS_VERSION`, `F2FS_TOOLS_VERSION`, `NTFS3G_VERSION`, `TESTDISK_VERSION`, and `RSYNC_VERSION` select the other tool sources. Set them explicitly for reproducible builds, for example `make tools LK_VERSION=v1.0.0`.
-- Inspect the squashfs with `unsquashfs -ll out/blackfox.sfs` or mount it as a loop device (requires root).
 - If you see kernel config warnings during `merge_config.sh`, confirm the desired options are enabled in `configs/kernel.config`.
-- If `out/blackfox.sfs` grows after adding more tools, raise `ramdisk_size=` in `configs/grub.cfg` and pass a matching `RAMDISK_SIZE=` to `make run`/`make test`.
 - Full build documentation (Makefile targets, adding your own static tools): [Click here](docs/Home.md).
 - Full usage documentation (repairing other distros, systemd, disks): [Click here](wiki/Home.md).
 

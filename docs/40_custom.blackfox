@@ -5,15 +5,14 @@ exec tail -n +3 $0
 # This layout assumes the files are stored in /boot on the filesystem
 # searched by GRUB:
 #   /boot/blackfox
-#   /boot/blackfox.sfs
-menuentry "Black Fox Rescue" {
-    search --no-floppy --file --set=root /boot/blackfox
-    linux  /boot/blackfox root=/dev/ram0 rootfstype=squashfs ramdisk_size=262144 console=tty0 console=ttyS0
-    initrd /boot/blackfox.sfs
+#   /boot/blackfox.img
+menuentry "Black Fox" {
+    linux  /boot/blackfox console=tty0 console=ttyS0 gfxpayload=keep
+    initrd /boot/blackfox.img
 }
 
 # If /boot is a separate partition and the files are copied to its top level,
 # use these paths instead:
 #   search --no-floppy --file --set=root /blackfox
-#   linux  /blackfox root=/dev/ram0 rootfstype=squashfs ramdisk_size=262144 console=tty0 console=ttyS0
-#   initrd /blackfox.sfs
+#   linux  /blackfox console=tty0 console=ttyS0 gfxpayload=keep
+#   initrd /blackfox.img

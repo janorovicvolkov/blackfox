@@ -164,19 +164,8 @@ used by `e2fsprogs-tool` or `dosfstools-tool`.
 Then rebuild:
 
 ```bash
-make rootfs squashfs iso
+make all
 ```
-
-## Check the final image size
-
-```bash
-ls -lh out/blackfox.sfs
-```
-
-If the size grows significantly, remember to raise `ramdisk_size=` in
-`configs/grub.cfg` and/or `RAMDISK_SIZE` for `make run` or `make test` (see
-[Booting Black Fox](../wiki/Booting-Black-Fox.md)), otherwise boot will fail
-because the file gets truncated while being copied into `/dev/ram0`.
 
 ## Good candidates to add for recovery work
 

@@ -12,7 +12,7 @@
 - `xz`
 - C toolchain (`gcc` + `binutils`)
 - C++ toolchain (`g++` with static libstdc++/libgcc support)
-- `mksquashfs`
+- `cpio`
 - GRUB toolchain (`grub-mkrescue` + `xorriso`)
 - `qemu-system-x86_64`
 - Rust toolchain (`rustup` + `cargo`)
@@ -37,7 +37,7 @@ Builds everything: `kernel`, `busybox`, `init`, the static recovery tools
 `btrfs-progs`, `f2fs-tools`, `ntfs-3g`, `testdisk`,
 `rsync`, `ddrescue`, `smartmontools`, `mdadm`, `gdisk`, `exfatprogs`),
 assembles the rootfs, then packs it into a
-squashfs and a bootable ISO.
+initramfs and a bootable ISO.
 
 Or run each stage individually:
 
@@ -46,8 +46,7 @@ make init       # build the rust init
 make busybox    # download and build static busybox
 make kernel     # download and build the kernel
 make tools      # download and statically build all recovery tools -> out/tools/<binaries>
-make rootfs     # assemble root filesystem
-make squashfs   # create out/blackfox.sfs
+make rootfs     # create out/blackfox.img
 make iso        # create out/blackfox.iso
 ```
 
@@ -107,21 +106,21 @@ the userspace side too.
 Assembles `build/rootfs`: creates `/proc`, `/sys`, `/dev`, `/tmp`, `/mnt`,
 `/admin`, `/bin`, `/bin/others`, `/lib` (`/sbin` and `/lib64` symlinked to `/bin` and
 `/lib`), copies `out/tools/*` into `/bin`, installs `busybox` applet symlinks, and
-drops in `init`.
+drops in `init`. After that, it will made a initramfs image at `out/blackfox.img`.
 
-### `squashfs` and `iso`
+### `iso`
 
-Packs the rootfs into `out/blackfox.sfs`, then assembles a GRUB-bootable ISO
+Packs the rootfs into `out/blackfox.img`, then assembles a GRUB-bootable ISO
 at `out/blackfox.iso` using `configs/grub.cfg`.
 
-To add Black Fox to an existing GRUB installation, copy the kernel and squashfs
+To add Black Fox to an existing GRUB installation, copy the kernel and initramfs
 to `/boot`, then copy [40_custom.blackfox](40_custom.blackfox) to
 `/etc/grub.d/40_custom` or merge its `menuentry` into that file. Make the file
 executable and regenerate GRUB:
 
 ```bash
 sudo cp out/blackfox /boot/blackfox
-sudo cp out/blackfox.sfs /boot/blackfox.sfs
+sudo cp out/blackfox.img /boot/blackfox.img
 sudo cp docs/40_custom.blackfox /etc/grub.d/40_blackfox
 sudo chmod +x /etc/grub.d/40_blackfox
 sudo update-grub
@@ -129,7 +128,7 @@ sudo update-grub
 
 The provided entry searches for `/boot/blackfox`. If `/boot` is a separate
 GRUB partition and the files are copied to its top level, use `/blackfox` and
-`/blackfox.sfs` in the entry instead. Verify the generated menu before
+`/blackfox.img` in the entry instead. Verify the generated menu before
 rebooting and keep the existing OS entry available.
 
 ### `run` or `test`
@@ -159,18 +158,6 @@ host symlinks by hand. To poke around interactively:
 sudo chroot build/rootfs /bin/busybox sh      # with root
 proot -S build/rootfs /bin/sh                 # without root
 ```
-
-## Checking the final image size
-
-```bash
-ls -lh out/blackfox.sfs
-```
-
-If it grows significantly (e.g. after adding tools), raise `ramdisk_size=`
-in `configs/grub.cfg` and pass a matching `RAMDISK_SIZE=` to `make run` or
-`make test` otherwise the image gets truncated while being copied into
-`/dev/ram0` and boot fails. See
-[Booting Black Fox](../wiki/Booting-Black-Fox.md).
 
 ## Contributing
 

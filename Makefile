@@ -99,14 +99,14 @@ INIT_BIN        := $(ROOT_DIR)/target/$(INIT_TARGET)/release/init
 FOX_BIN         := $(ROOT_DIR)/target/$(INIT_TARGET)/release/fox
 IMAGE_NAME      ?= blackfox
 KERNEL_OUT      := $(OUT_DIR)/$(IMAGE_NAME)
-SFS_OUT         := $(OUT_DIR)/$(IMAGE_NAME).sfs
+SFS_OUT         := $(OUT_DIR)/$(IMAGE_NAME).img
 RAMDISK_SIZE    ?= 262144
 
 NPROC := $(shell nproc)
 
 .PHONY: all kernel busybox init fox-tool tools lk-tool ncurses-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool ddrescue-tool smartmontools-tool mdadm-tool gdisk-tool exfatprogs-tool inih-tool zlib-tool urcu-tool rootfs squashfs iso run test clean cleanall
 
-all: iso
+all: rootfs kernel
 
 # KERNEL BUILD
 
@@ -537,40 +537,41 @@ rootfs: tools init busybox
 	rm -f $(ROOTFS_DIR)/bin/install
 	cp $(OUT_DIR)/init $(ROOTFS_DIR)/init
 	chmod +x $(ROOTFS_DIR)/init
+	( cd $(ROOTFS_DIR) && find . -print0 | cpio --null -o -H newc ) | xz -9 > $(SFS_OUT)
 
-squashfs: rootfs
-	mkdir -p $(OUT_DIR)
-	mksquashfs $(ROOTFS_DIR) $(SFS_OUT) -comp xz -noappend
-
-iso: squashfs kernel
+iso:
+	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(SFS_OUT) ]; then \
+		echo "ERROR: Kernel or initramfs image not found. Please run 'make all' first."; \
+		exit 1; \
+	fi
 	mkdir -p $(BUILD_DIR)/iso/boot/grub
 	cp $(KERNEL_OUT) $(BUILD_DIR)/iso/boot/blackfox
-	cp $(SFS_OUT) $(BUILD_DIR)/iso/boot/blackfox.sfs
+	cp $(SFS_OUT) $(BUILD_DIR)/iso/boot/blackfox.img
 	cp $(ROOT_DIR)/configs/grub.cfg $(BUILD_DIR)/iso/boot/grub/grub.cfg
 	grub-mkrescue -o $(OUT_DIR)/$(IMAGE_NAME).iso $(BUILD_DIR)/iso
 
 run:
 	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(SFS_OUT) ]; then \
-		echo "ERROR: Kernel or SquashFS image not found. Please run 'make iso' first."; \
+		echo "ERROR: Kernel or initramfs image not found. Please run 'make all' first."; \
 		exit 1; \
 	fi
 	qemu-system-x86_64 \
 	  -kernel $(KERNEL_OUT) \
 	  -initrd $(SFS_OUT) \
-	  -append "root=/dev/ram0 rootfstype=squashfs ramdisk_size=$(RAMDISK_SIZE) console=tty0 console=ttyS0 quiet" \
+	  -append "console=tty0 console=ttyS0 quiet" \
 	  -vga std \
 	  -m 512M
 
 test:
 	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(SFS_OUT) ]; then \
-		echo "ERROR: Kernel or SquashFS image not found. Please run 'make iso' first."; \
+		echo "ERROR: Kernel or initramfs image not found. Please run 'make all' first."; \
 		exit 1; \
 	fi
 	qemu-system-x86_64 \
-	  -kernel $(KERNEL_OUT) \
-	  -initrd $(SFS_OUT) \
-	  -append "root=/dev/ram0 rootfstype=squashfs ramdisk_size=$(RAMDISK_SIZE) console=ttyS0 quiet" \
-	  -nographic -serial mon:stdio -monitor none -no-reboot -m 512M
+	    -kernel $(KERNEL_OUT) \
+		-initrd $(SFS_OUT) \
+		-append "earlyprintk=ttyS0,115200 console=ttyS0 debug" \
+		-nographic -m 512M
 
 clean:
 	cargo clean
