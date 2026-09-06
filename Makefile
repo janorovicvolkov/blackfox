@@ -585,7 +585,7 @@ release:
 	cp $(KERNEL_OUT) $(RELEASE_DIR)/stage/blackfox-$(RELEASE_TAG)
 	cp $(IMG_OUT) $(RELEASE_DIR)/stage/blackfox-$(RELEASE_TAG).img
 	cp $(ISO_OUT) $(RELEASE_ISO)
-	tar --zstd -cf $(RELEASE_ARCHIVE) -C $(RELEASE_DIR)/stage $(RELEASE_ARCHIVE)
+	tar --zstd -cf $(RELEASE_ARCHIVE) -C $(RELEASE_DIR)/stage $(IMAGE_NAME)-$(RELEASE_TAG)
 	sha256sum $(RELEASE_ARCHIVE) > $(RELEASE_SUM)
 	sha256sum $(RELEASE_ISO) > $(RELEASE_SUM_ISO)
 	rm -rf $(RELEASE_DIR)/stage
