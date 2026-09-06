@@ -18,6 +18,7 @@
 - `qemu-system-x86_64`
 - Rust toolchain (`rustup` + `cargo`)
 - `git`
+- `python3` and `nasm` (required by the EDK2 UEFI Shell build)
 - `autoconf`
 - `automake`
 - `libtool`
@@ -48,6 +49,8 @@ make busybox    # download and build static busybox
 make kernel     # download and build the kernel
 make tools      # download and statically build all recovery tools -> out/tools/<binaries>
 make rootfs     # create out/blackfox.img
+make memtest    # build upstream Memtest86+ for BIOS and UEFI
+make uefi-shell # build the EDK2 UEFI Shell from source
 make iso        # create out/blackfox.iso
 make release    # create out/release/blackfox-<tag>-x86_64.tar.zst
 ```
@@ -119,7 +122,23 @@ drops in `init`. After that, it will made a initramfs image at `out/blackfox.img
 ### `iso`
 
 Packs the rootfs into `out/blackfox.img`, then assembles a GRUB-bootable ISO
-at `out/blackfox.iso` using `configs/grub.cfg`.
+at `out/blackfox.iso` using `configs/grub.cfg`. The target also builds
+Memtest86+ and the EDK2 UEFI Shell, then places them in the ISO as
+`/boot/memtest`, `/boot/memtest.efi`, and `/shellx64.efi`.
+
+### `memtest`
+
+Downloads and builds the upstream Memtest86+ source selected by
+`MEMTEST86_VERSION`. The resulting image is copied to `out/memtest` for the
+legacy BIOS GRUB path and `out/memtest.efi` for the UEFI GRUB path. The ISO
+menu uses the UEFI image through GRUB.
+
+### `uefi-shell`
+
+Clones the pinned EDK2 source tag selected by `UEFI_SHELL_VERSION`, initializes
+the required submodules, builds `ShellPkg/ShellPkg.dsc` with the GCC toolchain,
+and copies the resulting x86_64 EFI application to `out/shellx64.efi`. The ISO
+menu uses the UEFI Shell through GRUB.
 
 To add Black Fox to an existing GRUB installation, copy the kernel and initramfs
 to `/boot`, then copy [40_custom.blackfox](40_custom.blackfox) to

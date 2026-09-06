@@ -27,6 +27,9 @@ and base applets, while additional recovery utilities are bundled as static bina
   more informations.
 - Produces: `out/blackfox.img` (initramfs initrd), `out/blackfox` (kernel image), and
   `out/blackfox.iso` (bootable ISO).
+- Builds the EDK2 UEFI Shell from source and includes it as `shellx64.efi` in the
+  ISO for UEFI systems.
+- Includes upstream Memtest86+ for BIOS and UEFI memory testing.
 - `make run` opens a VM window with the recovery shell inside the guest;
   `make test` runs the kernel and initramfs in terminal-only mode;
   `make iso-test` boots the generated ISO through GRUB in terminal-only mode.
@@ -46,6 +49,7 @@ and base applets, while additional recovery utilities are bundled as static bina
 - `qemu-system-x86_64`
 - Rust toolchain (`rustup` + `cargo`)
 - `git`
+- `python3` and `nasm` (required to build the EDK2 UEFI Shell)
 - `autoconf`
 - `automake`
 - `libtool`
@@ -71,7 +75,9 @@ make busybox    # download and build static busybox
 make kernel     # download and build kernel
 make tools      # download and statically build recovery tools -> out/tools/<binaries>
 make rootfs     # create out/blackfox.img
-make iso        # create out/blackfox.iso
+make memtest    # build upstream Memtest86+
+make uefi-shell # build the EDK2 UEFI Shell from source
+make iso        # create out/blackfox.iso, including both boot utilities
 make release    # create out/release/blackfox-<tag>-x86_64.tar.zst
 ```
 

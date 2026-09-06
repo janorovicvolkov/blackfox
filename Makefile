@@ -1,125 +1,138 @@
-SHELL              := /bin/bash
-KERNEL_VERSION     ?= 7.2.3
-KERNEL_XZ          ?= 7.2.3
-BUSYBOX_VERSION    ?= 1.36.1
-E2FSPROGS_VERSION  ?= 1.47.4
-DOSFSTOOLS_VERSION ?= 4.2
-LK_VERSION         ?= main
-UTIL_LINUX_VERSION ?= 2.41.2
-NTFS3G_VERSION     ?= 2026.7.7
-TESTDISK_VERSION   ?= 7.2
-RSYNC_VERSION      ?= 3.5.0
-XFSPROGS_VERSION   ?= 7.1.1
-BTRFSPROGS_VERSION ?= 7.1
-F2FS_TOOLS_VERSION ?= 1.16.0
-DDRESCUE_VERSION    ?= 1.29
-SMARTMONTOOLS_VERSION ?= 7.4
-MDADM_VERSION       ?= 4.3
-GDISK_VERSION       ?= 1.0.10
-EXFATPROGS_VERSION  ?= 1.2.9
-INIH_VERSION       ?= r58
-ZLIB_VERSION       ?= 1.3.1
-URCU_VERSION       ?= 0.15.0
-NCURSES_VERSION    ?= 6.5
+# BLACK FOX BASIC CONFIGURATION
+SHELL           := /bin/sh
+RELEASE_VERSION ?= 1.0.0
 
-ROOT_DIR        := $(shell pwd)
-BUILD_DIR       := $(ROOT_DIR)/build
-OUT_DIR         := $(ROOT_DIR)/out
-ROOTFS_DIR      := $(BUILD_DIR)/rootfs
-MEMTEST_SRC     := $(ROOT_DIR)/src/memtest.rs
-MEMTEST_BIOS    := $(OUT_DIR)/memtest
-MEMTEST_UEFI    := $(OUT_DIR)/memtest.efi
-KERNEL_SRC      := $(BUILD_DIR)/linux-$(KERNEL_XZ)
-KERNEL_TAR      := linux-$(KERNEL_XZ).tar.xz
-KERNEL_URL      := https://www.kernel.org/pub/linux/kernel/v7.x/$(KERNEL_TAR)
-KERNEL_IMG      := $(KERNEL_SRC)/arch/x86/boot/bzImage
-BUSYBOX_SRC     := $(BUILD_DIR)/busybox-$(BUSYBOX_VERSION)
-BUSYBOX_TAR     := busybox-$(BUSYBOX_VERSION).tar.bz2
-BUSYBOX_URL     := https://busybox.net/downloads/$(BUSYBOX_TAR)
-E2FSPROGS_SRC   := $(BUILD_DIR)/e2fsprogs-$(E2FSPROGS_VERSION)
-E2FSPROGS_TAR   := e2fsprogs-$(E2FSPROGS_VERSION).tar.gz
-E2FSPROGS_URL   := https://github.com/tytso/e2fsprogs/archive/refs/tags/v$(E2FSPROGS_VERSION).tar.gz
-DOSFSTOOLS_SRC  := $(BUILD_DIR)/dosfstools-$(DOSFSTOOLS_VERSION)
-DOSFSTOOLS_TAR  := dosfstools-$(DOSFSTOOLS_VERSION).tar.gz
-DOSFSTOOLS_URL  := https://github.com/dosfstools/dosfstools/releases/download/v$(DOSFSTOOLS_VERSION)/dosfstools-$(DOSFSTOOLS_VERSION).tar.gz
-LK_SRC          := $(BUILD_DIR)/lk-$(LK_VERSION)
-LK_REPO         := https://github.com/source-liskalinux/lk.git
-UTIL_LINUX_SRC  := $(BUILD_DIR)/util-linux-$(UTIL_LINUX_VERSION)
-UTIL_LINUX_TAR  := util-linux-$(UTIL_LINUX_VERSION).tar.xz
-UTIL_LINUX_URL  := https://www.kernel.org/pub/linux/utils/util-linux/v2.41/$(UTIL_LINUX_TAR)
-UTIL_LINUX_BINS := losetup blkid fdisk sfdisk findmnt swapon mkswap blockdev fsck mount umount
+# TOOL VERSIONS CONFIGURATION
+KERNEL_VERSION        ?= 7.2.3
+KERNEL_XZ             ?= 7.2.3
+BUSYBOX_VERSION       ?= 1.36.1
+E2FSPROGS_VERSION     ?= 1.47.4
+DOSFSTOOLS_VERSION    ?= 4.2
+LK_VERSION            ?= main
+UTIL_LINUX_VERSION    ?= 2.41.2
+NTFS3G_VERSION        ?= 2026.7.7
+TESTDISK_VERSION      ?= 7.2
+RSYNC_VERSION         ?= 3.5.0
+XFSPROGS_VERSION      ?= 7.1.1
+BTRFSPROGS_VERSION    ?= 7.1
+F2FS_TOOLS_VERSION    ?= 1.16.0
+DDRESCUE_VERSION      ?= 1.29
+SMARTMONTOOLS_VERSION ?= 7.4
+MDADM_VERSION         ?= 4.3
+GDISK_VERSION         ?= 1.0.10
+EXFATPROGS_VERSION    ?= 1.2.9
+INIH_VERSION          ?= r58
+ZLIB_VERSION          ?= 1.3.1
+URCU_VERSION          ?= 0.15.0
+NCURSES_VERSION       ?= 6.5
+MEMTEST86_VERSION     ?= 8.10
+UEFI_SHELL_VERSION    ?= edk2-stable202608
+
+# BUILD DIRECTORIES CONFIGURATION
+ROOT_DIR                   := $(shell pwd)
+BUILD_DIR                  := $(ROOT_DIR)/build
+OUT_DIR                    := $(ROOT_DIR)/out
+ROOTFS_DIR                 := $(ROOT_DIR)/rootfs
+MEMTEST_BIOS               := $(OUT_DIR)/memtest
+MEMTEST_UEFI               := $(OUT_DIR)/memtest.efi
+MEMTEST86_ARCHIVE          := mt86plus_$(MEMTEST86_VERSION).src.zip
+MEMTEST86_URL              := https://www.memtest.org/download/v$(MEMTEST86_VERSION)/$(MEMTEST86_ARCHIVE)
+MEMTEST86_SRC_DIR          := $(BUILD_DIR)/memtest86plus-src
+MEMTEST86_BUILD_DIR        := $(MEMTEST86_SRC_DIR)/src/build/x86_64
+UEFI_SHELL_SRC_DIR         := $(BUILD_DIR)/edk2-$(UEFI_SHELL_VERSION)
+UEFI_SHELL_REPO            := https://github.com/tianocore/edk2.git
+UEFI_SHELL_BIN             := $(OUT_DIR)/shellx64.efi
+KERNEL_SRC                 := $(BUILD_DIR)/linux-$(KERNEL_XZ)
+KERNEL_TAR                 := linux-$(KERNEL_XZ).tar.xz
+KERNEL_URL                 := https://www.kernel.org/pub/linux/kernel/v7.x/$(KERNEL_TAR)
+KERNEL_IMG                 := $(KERNEL_SRC)/arch/x86/boot/bzImage
+BUSYBOX_SRC                := $(BUILD_DIR)/busybox-$(BUSYBOX_VERSION)
+BUSYBOX_TAR                := busybox-$(BUSYBOX_VERSION).tar.bz2
+BUSYBOX_URL                := https://busybox.net/downloads/$(BUSYBOX_TAR)
+E2FSPROGS_SRC              := $(BUILD_DIR)/e2fsprogs-$(E2FSPROGS_VERSION)
+E2FSPROGS_TAR              := e2fsprogs-$(E2FSPROGS_VERSION).tar.gz
+E2FSPROGS_URL              := https://github.com/tytso/e2fsprogs/archive/refs/tags/v$(E2FSPROGS_VERSION).tar.gz
+DOSFSTOOLS_SRC             := $(BUILD_DIR)/dosfstools-$(DOSFSTOOLS_VERSION)
+DOSFSTOOLS_TAR             := dosfstools-$(DOSFSTOOLS_VERSION).tar.gz
+DOSFSTOOLS_URL             := https://github.com/dosfstools/dosfstools/releases/download/v$(DOSFSTOOLS_VERSION)/dosfstools-$(DOSFSTOOLS_VERSION).tar.gz
+LK_SRC                     := $(BUILD_DIR)/lk-$(LK_VERSION)
+LK_REPO                    := https://github.com/source-liskalinux/lk.git
+UTIL_LINUX_SRC             := $(BUILD_DIR)/util-linux-$(UTIL_LINUX_VERSION)
+UTIL_LINUX_TAR             := util-linux-$(UTIL_LINUX_VERSION).tar.xz
+UTIL_LINUX_URL             := https://www.kernel.org/pub/linux/utils/util-linux/v2.41/$(UTIL_LINUX_TAR)
+UTIL_LINUX_BINS            := losetup blkid fdisk sfdisk findmnt swapon mkswap blockdev fsck mount umount
 UTIL_LINUX_STATIC_PROGRAMS := blkid,fdisk,losetup,sfdisk,mount,umount
-UTIL_LINUX_BINS += cfdisk
+UTIL_LINUX_BINS            += cfdisk
 UTIL_LINUX_STATIC_PROGRAMS := $(UTIL_LINUX_STATIC_PROGRAMS),cfdisk
-NCURSES_SRC     := $(BUILD_DIR)/ncurses-$(NCURSES_VERSION)
-NCURSES_TAR     := ncurses-$(NCURSES_VERSION).tar.gz
-NCURSES_URL     := https://invisible-island.net/archives/ncurses/$(NCURSES_TAR)
-NCURSES_PREFIX  := $(NCURSES_SRC)/stage
-NTFS3G_SRC      := $(BUILD_DIR)/ntfs-3g-$(NTFS3G_VERSION)
-NTFS3G_TAR      := ntfs-3g-$(NTFS3G_VERSION).tar.gz
-NTFS3G_URL      := https://github.com/tuxera/ntfs-3g/archive/$(NTFS3G_VERSION)/$(NTFS3G_TAR)
-TESTDISK_SRC    := $(BUILD_DIR)/testdisk-$(TESTDISK_VERSION)
-TESTDISK_TAR    := testdisk-$(TESTDISK_VERSION).tar.bz2
-TESTDISK_URL    := https://www.cgsecurity.org/$(TESTDISK_TAR)
-RSYNC_SRC       := $(BUILD_DIR)/rsync-$(RSYNC_VERSION)
-RSYNC_TAR       := rsync-$(RSYNC_VERSION).tar.gz
-RSYNC_URL       := https://rsync.samba.org/ftp/rsync/src/$(RSYNC_TAR)
-XFSPROGS_SRC    := $(BUILD_DIR)/xfsprogs-$(XFSPROGS_VERSION)
-XFSPROGS_TAR    := xfsprogs-$(XFSPROGS_VERSION).tar.xz
-XFSPROGS_URL    := https://www.kernel.org/pub/linux/utils/fs/xfs/xfsprogs/$(XFSPROGS_TAR)
-BTRFSPROGS_SRC  := $(BUILD_DIR)/btrfs-progs-$(BTRFSPROGS_VERSION)
-BTRFSPROGS_TAR  := btrfs-progs-$(BTRFSPROGS_VERSION).tar.gz
-BTRFSPROGS_URL  := https://github.com/kdave/btrfs-progs/archive/refs/tags/v$(BTRFSPROGS_VERSION).tar.gz
-F2FS_TOOLS_SRC  := $(BUILD_DIR)/f2fs-tools-$(F2FS_TOOLS_VERSION)
-F2FS_TOOLS_TAR  := f2fs-tools-$(F2FS_TOOLS_VERSION).tar.gz
-F2FS_TOOLS_URL  := https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git/snapshot/f2fs-tools-$(F2FS_TOOLS_VERSION).tar.gz
-DDRESCUE_SRC    := $(BUILD_DIR)/ddrescue-$(DDRESCUE_VERSION)
-DDRESCUE_TAR    := ddrescue-$(DDRESCUE_VERSION).tar.lz
-DDRESCUE_URL    := https://ftp.gnu.org/gnu/ddrescue/$(DDRESCUE_TAR)
-SMARTMONTOOLS_SRC := $(BUILD_DIR)/smartmontools-$(SMARTMONTOOLS_VERSION)
-SMARTMONTOOLS_TAR := smartmontools-$(SMARTMONTOOLS_VERSION).tar.gz
-SMARTMONTOOLS_URL := https://github.com/smartmontools/smartmontools/releases/download/RELEASE_$(subst .,_,$(SMARTMONTOOLS_VERSION))/$(SMARTMONTOOLS_TAR)
-MDADM_SRC       := $(BUILD_DIR)/mdadm-$(MDADM_VERSION)
-MDADM_TAR       := mdadm-$(MDADM_VERSION).tar.xz
-MDADM_URL       := https://www.kernel.org/pub/linux/utils/raid/mdadm/$(MDADM_TAR)
-GDISK_SRC       := $(BUILD_DIR)/gptfdisk-$(GDISK_VERSION)
-GDISK_TAR       := gptfdisk-$(GDISK_VERSION).tar.gz
-GDISK_URL       := https://sourceforge.net/projects/gptfdisk/files/gptfdisk/$(GDISK_VERSION)/$(GDISK_TAR)/download
-EXFATPROGS_SRC  := $(BUILD_DIR)/exfatprogs-$(EXFATPROGS_VERSION)
-EXFATPROGS_TAR  := exfatprogs-$(EXFATPROGS_VERSION).tar.xz
-EXFATPROGS_URL  := https://github.com/exfatprogs/exfatprogs/releases/download/$(EXFATPROGS_VERSION)/$(EXFATPROGS_TAR)
-INIH_SRC        := $(BUILD_DIR)/inih-$(INIH_VERSION)
-INIH_TAR        := inih-$(INIH_VERSION).tar.gz
-INIH_URL        := https://github.com/benhoyt/inih/archive/refs/tags/$(INIH_VERSION).tar.gz
-ZLIB_SRC        := $(BUILD_DIR)/zlib-$(ZLIB_VERSION)
-ZLIB_TAR        := zlib-$(ZLIB_VERSION).tar.gz
-ZLIB_URL        := https://github.com/madler/zlib/archive/refs/tags/v$(ZLIB_VERSION).tar.gz
-URCU_SRC        := $(BUILD_DIR)/userspace-rcu-$(URCU_VERSION)
-URCU_TAR        := userspace-rcu-$(URCU_VERSION).tar.gz
-URCU_URL        := https://github.com/urcu/userspace-rcu/archive/refs/tags/v$(URCU_VERSION).tar.gz
-INIT_TARGET     := x86_64-unknown-linux-musl
-INIT_BIN        := $(ROOT_DIR)/target/$(INIT_TARGET)/release/init
-FOX_BIN         := $(ROOT_DIR)/target/$(INIT_TARGET)/release/fox
+NCURSES_SRC                := $(BUILD_DIR)/ncurses-$(NCURSES_VERSION)
+NCURSES_TAR                := ncurses-$(NCURSES_VERSION).tar.gz
+NCURSES_URL                := https://invisible-island.net/archives/ncurses/$(NCURSES_TAR)
+NCURSES_PREFIX             := $(NCURSES_SRC)/stage
+NTFS3G_SRC                 := $(BUILD_DIR)/ntfs-3g-$(NTFS3G_VERSION)
+NTFS3G_TAR                 := ntfs-3g-$(NTFS3G_VERSION).tar.gz
+NTFS3G_URL                 := https://github.com/tuxera/ntfs-3g/archive/$(NTFS3G_VERSION)/$(NTFS3G_TAR)
+TESTDISK_SRC               := $(BUILD_DIR)/testdisk-$(TESTDISK_VERSION)
+TESTDISK_TAR               := testdisk-$(TESTDISK_VERSION).tar.bz2
+TESTDISK_URL               := https://www.cgsecurity.org/$(TESTDISK_TAR)
+RSYNC_SRC                  := $(BUILD_DIR)/rsync-$(RSYNC_VERSION)
+RSYNC_TAR                  := rsync-$(RSYNC_VERSION).tar.gz
+RSYNC_URL                  := https://rsync.samba.org/ftp/rsync/src/$(RSYNC_TAR)
+XFSPROGS_SRC               := $(BUILD_DIR)/xfsprogs-$(XFSPROGS_VERSION)
+XFSPROGS_TAR               := xfsprogs-$(XFSPROGS_VERSION).tar.xz
+XFSPROGS_URL               := https://www.kernel.org/pub/linux/utils/fs/xfs/xfsprogs/$(XFSPROGS_TAR)
+BTRFSPROGS_SRC             := $(BUILD_DIR)/btrfs-progs-$(BTRFSPROGS_VERSION)
+BTRFSPROGS_TAR             := btrfs-progs-$(BTRFSPROGS_VERSION).tar.gz
+BTRFSPROGS_URL             := https://github.com/kdave/btrfs-progs/archive/refs/tags/v$(BTRFSPROGS_VERSION).tar.gz
+F2FS_TOOLS_SRC             := $(BUILD_DIR)/f2fs-tools-$(F2FS_TOOLS_VERSION)
+F2FS_TOOLS_TAR             := f2fs-tools-$(F2FS_TOOLS_VERSION).tar.gz
+F2FS_TOOLS_URL             := https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git/snapshot/f2fs-tools-$(F2FS_TOOLS_VERSION).tar.gz
+DDRESCUE_SRC               := $(BUILD_DIR)/ddrescue-$(DDRESCUE_VERSION)
+DDRESCUE_TAR               := ddrescue-$(DDRESCUE_VERSION).tar.lz
+DDRESCUE_URL               := https://ftp.gnu.org/gnu/ddrescue/$(DDRESCUE_TAR)
+SMARTMONTOOLS_SRC          := $(BUILD_DIR)/smartmontools-$(SMARTMONTOOLS_VERSION)
+SMARTMONTOOLS_TAR          := smartmontools-$(SMARTMONTOOLS_VERSION).tar.gz
+SMARTMONTOOLS_URL          := https://github.com/smartmontools/smartmontools/releases/download/RELEASE_$(subst .,_,$(SMARTMONTOOLS_VERSION))/$(SMARTMONTOOLS_TAR)
+MDADM_SRC                  := $(BUILD_DIR)/mdadm-$(MDADM_VERSION)
+MDADM_TAR                  := mdadm-$(MDADM_VERSION).tar.xz
+MDADM_URL                  := https://www.kernel.org/pub/linux/utils/raid/mdadm/$(MDADM_TAR)
+GDISK_SRC                  := $(BUILD_DIR)/gptfdisk-$(GDISK_VERSION)
+GDISK_TAR                  := gptfdisk-$(GDISK_VERSION).tar.gz
+GDISK_URL                  := https://sourceforge.net/projects/gptfdisk/files/gptfdisk/$(GDISK_VERSION)/$(GDISK_TAR)/download
+EXFATPROGS_SRC             := $(BUILD_DIR)/exfatprogs-$(EXFATPROGS_VERSION)
+EXFATPROGS_TAR             := exfatprogs-$(EXFATPROGS_VERSION).tar.xz
+EXFATPROGS_URL             := https://github.com/exfatprogs/exfatprogs/releases/download/$(EXFATPROGS_VERSION)/$(EXFATPROGS_TAR)
+INIH_SRC                   := $(BUILD_DIR)/inih-$(INIH_VERSION)
+INIH_TAR                   := inih-$(INIH_VERSION).tar.gz
+INIH_URL                   := https://github.com/benhoyt/inih/archive/refs/tags/$(INIH_VERSION).tar.gz
+ZLIB_SRC                   := $(BUILD_DIR)/zlib-$(ZLIB_VERSION)
+ZLIB_TAR                   := zlib-$(ZLIB_VERSION).tar.gz
+ZLIB_URL                   := https://github.com/madler/zlib/archive/refs/tags/v$(ZLIB_VERSION).tar.gz
+URCU_SRC                   := $(BUILD_DIR)/userspace-rcu-$(URCU_VERSION)
+URCU_TAR                   := userspace-rcu-$(URCU_VERSION).tar.gz
+URCU_URL                   := https://github.com/urcu/userspace-rcu/archive/refs/tags/v$(URCU_VERSION).tar.gz
+INIT_TARGET                := x86_64-unknown-linux-musl
+INIT_BIN                   := $(ROOT_DIR)/target/$(INIT_TARGET)/release/init
+FOX_BIN                    := $(ROOT_DIR)/target/$(INIT_TARGET)/release/fox
+
+# OUTPUT FILES CONFIGURATION
 IMAGE_NAME      ?= blackfox
 KERNEL_OUT      := $(OUT_DIR)/$(IMAGE_NAME)
-SFS_OUT         := $(OUT_DIR)/$(IMAGE_NAME).img
+IMG_OUT         := $(OUT_DIR)/$(IMAGE_NAME).img
 ISO_OUT         := $(OUT_DIR)/$(IMAGE_NAME).iso
-RELEASE_VERSION ?= 1.0.0
 RELEASE_TAG     ?= v$(RELEASE_VERSION)
 RELEASE_DIR     := $(OUT_DIR)/release
 RELEASE_ARCHIVE := $(RELEASE_DIR)/$(IMAGE_NAME)-$(RELEASE_TAG)-x86_64.tar.zst
 RELEASE_ISO     := $(RELEASE_DIR)/$(IMAGE_NAME)-$(RELEASE_TAG)-x86_64.iso
 RELEASE_SUM     := $(RELEASE_DIR)/$(IMAGE_NAME)-$(RELEASE_TAG)-x86_64.tar.zst.sha256
 RELEASE_SUM_ISO := $(RELEASE_DIR)/$(IMAGE_NAME)-$(RELEASE_TAG)-x86_64.iso.sha256
-
 NPROC := $(shell nproc)
 
-.PHONY: all kernel busybox init fox-tool memtest tools lk-tool ncurses-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool ddrescue-tool smartmontools-tool mdadm-tool gdisk-tool exfatprogs-tool inih-tool zlib-tool urcu-tool rootfs squashfs iso run iso-test test release github-release clean cleanall
+.PHONY: all kernel busybox init fox-tool memtest uefi-shell tools lk-tool ncurses-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool ddrescue-tool smartmontools-tool mdadm-tool gdisk-tool exfatprogs-tool inih-tool zlib-tool urcu-tool rootfs iso run iso-test test release github-release clean cleanall help
 
 all: rootfs kernel
 
-# KERNEL BUILD
 
+# KERNEL BUILD
 kernel:
 	mkdir -p $(BUILD_DIR)
 	wget -O $(BUILD_DIR)/$(KERNEL_TAR) $(KERNEL_URL)
@@ -132,8 +145,8 @@ kernel:
 	mkdir -p $(OUT_DIR)
 	cp $(KERNEL_IMG) $(KERNEL_OUT)
 
-# BUSYBOX BUILD
 
+# BUSYBOX BUILD
 busybox:
 	mkdir -p $(BUILD_DIR)
 	wget -O $(BUILD_DIR)/$(BUSYBOX_TAR) $(BUSYBOX_URL)
@@ -141,14 +154,6 @@ busybox:
 	cd $(BUSYBOX_SRC) && make defconfig
 	sed -i 's|CONFIG_TC=y|# CONFIG_TC is not set|g' $(BUSYBOX_SRC)/.config
 	sed -i 's|# CONFIG_STATIC is not set|CONFIG_STATIC=y|g' $(BUSYBOX_SRC)/.config
-	# Disable the applets now provided by "lk" (guarded cp/mv/rm/mkdir/
-	# chmod/chown/ln) and by the real util-linux binaries from
-	# "util-linux-tool" (mount/umount/losetup/blkid/lsblk/fdisk/sfdisk/
-	# swapon/swapoff/mkswap/blockdev/fsck), so there's exactly one binary
-	# providing each command on $PATH instead of two clashing
-	# implementations. Some of these config symbols may not exist in every
-	# BusyBox version (e.g. no CONFIG_SFDISK applet), the sed is a no-op
-	# for those, which is harmless. See docs/Extending-Tools.md.
 	for cfg in CONFIG_CP CONFIG_MV CONFIG_RM CONFIG_MKDIR CONFIG_CHMOD CONFIG_CHOWN CONFIG_LN \
 	           CONFIG_MOUNT CONFIG_UMOUNT CONFIG_LOSETUP CONFIG_BLKID CONFIG_LSBLK CONFIG_ADDUSER \
 	           CONFIG_FDISK CONFIG_SFDISK CONFIG_FINDMNT CONFIG_SWAPON CONFIG_SWAPOFF CONFIG_SU \
@@ -165,7 +170,6 @@ busybox:
 	cp $(BUSYBOX_SRC)/busybox $(OUT_DIR)/busybox
 
 # INIT BUILD
-
 init:
 	rustup target add $(INIT_TARGET) 2>/dev/null || true
 	cargo build --release --target $(INIT_TARGET)
@@ -173,6 +177,7 @@ init:
 	cp $(INIT_BIN) $(OUT_DIR)/init
 	chmod +x $(OUT_DIR)/init
 
+# FOX TOOL BUILD
 fox-tool:
 	rustup target add $(INIT_TARGET) 2>/dev/null || true
 	cargo build --release --target $(INIT_TARGET) --bin fox
@@ -181,63 +186,39 @@ fox-tool:
 	strip $(OUT_DIR)/tools/fox 2>/dev/null || true
 	chmod +x $(OUT_DIR)/tools/fox
 
-# RUST MEMTEST
-#
-# BIOS uses a Multiboot2 32-bit ELF; UEFI uses a PE/COFF EFI application.
-# Both test only memory reported as available by the firmware.
 
+# MEMTEST BUILD
 memtest:
-	rustup run nightly-2026-08-01 cargo rustc --manifest-path $(ROOT_DIR)/memtest/Cargo.toml --target-dir $(ROOT_DIR)/target-memtest -Z build-std=core --target i686-unknown-linux-gnu --release --bin memtest -- \
-		-C opt-level=2 -C panic=abort -C relocation-model=static -C linker=rust-lld \
-		-C link-arg=-T$(ROOT_DIR)/src/memtest-bios.ld --cfg bios
-	cp $(ROOT_DIR)/target-memtest/i686-unknown-linux-gnu/release/memtest $(MEMTEST_BIOS)
-	rustc --target x86_64-unknown-uefi -C opt-level=2 -C panic=abort \
-		--crate-type bin --cfg uefi $(MEMTEST_SRC) -o $(MEMTEST_UEFI)
+	mkdir -p $(BUILD_DIR)
+	if [ ! -f $(MEMTEST86_BUILD_DIR)/mt86plus ]; then \
+		wget -O $(BUILD_DIR)/$(MEMTEST86_ARCHIVE) $(MEMTEST86_URL); \
+		rm -rf $(MEMTEST86_SRC_DIR); \
+		mkdir -p $(MEMTEST86_SRC_DIR); \
+		unzip -q $(BUILD_DIR)/$(MEMTEST86_ARCHIVE) -d $(MEMTEST86_SRC_DIR); \
+	fi
+	cd $(MEMTEST86_BUILD_DIR) && $(MAKE) mt86plus
+	cp $(MEMTEST86_BUILD_DIR)/mt86plus $(MEMTEST_BIOS)
+	cp $(MEMTEST86_BUILD_DIR)/mt86plus $(MEMTEST_UEFI)
 	@file $(MEMTEST_BIOS) $(MEMTEST_UEFI)
 
-# TOOLS BUILD
-#
-# BusyBox's own "mkfs.ext2" "fdisk" or "fsck" are minimal implementations, not
-# enough for real ext4 repair or FAT32 repair. These two are built as
-# fully static binaries and dropped into /bin so real e2fsck, resize2fs, or
-# fsck.vfat are available at boot without needing a package manager.
-#
-# "lk" (https://github.com/source-liskalinux/lk) is a small filesystem or shell
-# CLI built on the same "liblk" crate as this project's own init. Unlike
-# e2fsprogs or dosfstools it's pure Rust, so it's cross-compiled to the musl
-# target instead of "./configure ... -static" -- same approach as the "init"
-# target below. It adds a protected-path-guarded cp/mv/rm/chmod/chown, a
-# Rust-only "-P/--partition-list", "--mount"/"--umount", and a built-in
-# "lk -S" shell.
-#
-# "util-linux" replaces BusyBox's minimal mount/umount/fdisk/lsblk/etc with
-# the real thing (full GPT editing via sfdisk, findmnt, proper mount option
-# parsing, ...). Only the handful of block-device/mount binaries are built
-# (UTIL_LINUX_BINS below), not the whole util-linux suite (no login/su/
-# chsh/agetty BusyBox already covers basic login-less shell use, and
-# those need PAM).
-#
-# "ntfs-3g" adds NTFS mount/repair (mount.ntfs-3g, ntfsfix, ntfsresize,
-# ntfsclone, mkntfs) on top of the kernel's own read/write ntfs3 driver
-# useful as a fallback and for the ntfsprogs repair utilities the kernel
-# driver doesn't provide. Built with its internal FUSE ("fuse-lite") so it
-# doesn't need a libfuse dependency or a FUSE kernel module beyond what's
-# already in configs/kernel.config.
-#
-# "testdisk"/"photorec" (partition-table and deleted-file recovery) and
-# "rsync" (fast backups before risky operations) round out the recovery
-# toolkit. testdisk ships its own "make static" target upstream.
-#
-# OpenZFS is not included here: its userspace tools require an out-of-tree
-# kernel module, which this tiny built-in kernel does not build or package.
-#
-# LVM (lvm2) and LUKS (cryptsetup) are still NOT auto-built here, both pull
-# in heavy dependency chains (libdevmapper, libpopt, json-c, libargon2, ...)
-# that are fragile to static-link reliably across distros. Kernel-side
-# support (device-mapper, dm-crypt) is already enabled in
-# configs/kernel.config. See docs/Extending-Tools.md for manual
-# static-build instructions if you need those userspace tools too.
 
+# UEFI SHELL BUILD
+uefi-shell:
+	mkdir -p $(BUILD_DIR)
+	if [ ! -f $(UEFI_SHELL_SRC_DIR)/BaseTools/Source/C/BrotliCompress/brotli/c/common/constants.h ]; then \
+		rm -rf $(UEFI_SHELL_SRC_DIR); \
+		git clone --depth 1 --branch $(UEFI_SHELL_VERSION) --recurse-submodules --shallow-submodules $(UEFI_SHELL_REPO) $(UEFI_SHELL_SRC_DIR); \
+	fi
+	git -C $(UEFI_SHELL_SRC_DIR) submodule update --init --recursive BaseTools/Source/C/BrotliCompress/brotli
+	$(MAKE) -C $(UEFI_SHELL_SRC_DIR)/BaseTools -j$(NPROC)
+	mkdir -p $(UEFI_SHELL_SRC_DIR)/MdePkg/Library/MipiSysTLib/mipisyst/library/include
+	cd $(UEFI_SHELL_SRC_DIR) && . ./edksetup.sh && build -a X64 -t GCC -b RELEASE -p ShellPkg/ShellPkg.dsc
+	mkdir -p $(OUT_DIR)
+	cp $(UEFI_SHELL_SRC_DIR)/Build/Shell/RELEASE_GCC/X64/ShellPkg/Application/Shell/Shell/DEBUG/Shell.efi $(UEFI_SHELL_BIN)
+	@file $(UEFI_SHELL_BIN)
+
+
+# TOOLS BUILD
 tools: e2fsprogs-tool dosfstools-tool fox-tool lk-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool ddrescue-tool smartmontools-tool mdadm-tool gdisk-tool exfatprogs-tool
 	file $(OUT_DIR)/tools/*
 
@@ -537,9 +518,13 @@ urcu-tool:
 	cd $(URCU_SRC) && ./bootstrap && CC=musl-gcc ./configure --enable-static --disable-shared --disable-man-pages
 	$(MAKE) -C $(URCU_SRC) -j$(NPROC) CC=musl-gcc LDFLAGS="-static"
 
-# ROOTFS BUILD
 
-rootfs: tools init busybox
+# ROOTFS AND INITRAMFS BUILD
+rootfs:
+	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(OUT_DIR)/tools/* ]; then \
+		echo "ERROR: Kernel or tools binary not found. Please run 'make all' first."; \
+		exit 1; \
+	fi
 	mkdir -p $(ROOTFS_DIR)/proc
 	mkdir -p $(ROOTFS_DIR)/sys
 	mkdir -p $(ROOTFS_DIR)/dev
@@ -561,10 +546,12 @@ rootfs: tools init busybox
 	chmod +x $(ROOTFS_DIR)/bin/* 2>/dev/null || true
 	cp $(OUT_DIR)/init $(ROOTFS_DIR)/init
 	chmod +x $(ROOTFS_DIR)/init
-	( cd $(ROOTFS_DIR) && find . -print0 | cpio --null -o -H newc ) | xz --check=crc32 --lzma2=dict=1MiB > $(SFS_OUT)
+	( cd $(ROOTFS_DIR) && find . -print0 | cpio --null -o -H newc ) | xz --check=crc32 --lzma2=dict=1MiB > $(IMG_OUT)
 
+
+# ISO IMAGE BUILD
 iso:
-	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(SFS_OUT) ]; then \
+	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(IMG_OUT) ]; then \
 		echo "ERROR: Kernel or initramfs image not found. Please run 'make all' first."; \
 		exit 1; \
 	fi
@@ -574,17 +561,21 @@ iso:
 		exit 1; \
 	fi
 	$(MAKE) memtest
+	$(MAKE) uefi-shell
 	rm -rf $(BUILD_DIR)/iso
 	mkdir -p $(BUILD_DIR)/iso/boot/grub
 	cp $(KERNEL_OUT) $(BUILD_DIR)/iso/boot/blackfox
-	cp $(SFS_OUT) $(BUILD_DIR)/iso/boot/blackfox.img
+	cp $(IMG_OUT) $(BUILD_DIR)/iso/boot/blackfox.img
 	cp $(MEMTEST_BIOS) $(BUILD_DIR)/iso/boot/memtest
 	cp $(MEMTEST_UEFI) $(BUILD_DIR)/iso/boot/memtest.efi
+	cp $(UEFI_SHELL_BIN) $(BUILD_DIR)/iso/shellx64.efi
 	cp $(ROOT_DIR)/configs/grub.cfg $(BUILD_DIR)/iso/boot/grub/grub.cfg
 	grub-mkrescue -o $(ISO_OUT) $(BUILD_DIR)/iso -- -volid BLACKFOX
 
+
+# RELEASE OFFICIAL BUILD
 release:
-	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(SFS_OUT) ] || [ ! -f $(ISO_OUT) ]; then \
+	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(IMG_OUT) ] || [ ! -f $(ISO_OUT) ]; then \
 		echo "ERROR: One or more required files not found. Please run 'make all iso' first."; \
 		exit 1; \
 	fi
@@ -592,7 +583,7 @@ release:
 	rm -rf $(RELEASE_DIR)/stage
 	mkdir -p $(RELEASE_DIR)/stage/$(IMAGE_NAME)-$(RELEASE_TAG)
 	cp $(KERNEL_OUT) $(RELEASE_DIR)/stage/blackfox-$(RELEASE_TAG)
-	cp $(SFS_OUT) $(RELEASE_DIR)/stage/blackfox-$(RELEASE_TAG).img
+	cp $(IMG_OUT) $(RELEASE_DIR)/stage/blackfox-$(RELEASE_TAG).img
 	cp $(ISO_OUT) $(RELEASE_ISO)
 	tar --zstd -cf $(RELEASE_ARCHIVE) -C $(RELEASE_DIR)/stage $(RELEASE_ARCHIVE)
 	sha256sum $(RELEASE_ARCHIVE) > $(RELEASE_SUM)
@@ -606,14 +597,16 @@ github-release: release
 	gh auth status
 	gh release create $(RELEASE_TAG) $(RELEASE_ARCHIVE) $(RELEASE_SUM) --title "$(RELEASE_TAG)" --generate-notes
 
+
+# QEMU TESTING
 run:
-	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(SFS_OUT) ]; then \
+	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(IMG_OUT) ]; then \
 		echo "ERROR: Kernel or initramfs image not found. Please run 'make all' first."; \
 		exit 1; \
 	fi
 	qemu-system-x86_64 \
 	  -kernel $(KERNEL_OUT) \
-	  -initrd $(SFS_OUT) \
+	  -initrd $(IMG_OUT) \
 	  -append "rdinit=/init root=/dev/ram0 rootfstype=ramfs console=tty0 quiet" \
 	  -vga std \
 	  -m 512M
@@ -630,22 +623,44 @@ iso-test:
 	  -m 512M
 
 test:
-	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(SFS_OUT) ]; then \
+	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(IMG_OUT) ]; then \
 		echo "ERROR: Kernel or initramfs image not found. Please run 'make all' first."; \
 		exit 1; \
 	fi
 	qemu-system-x86_64 \
 	    -kernel $(KERNEL_OUT) \
-		-initrd $(SFS_OUT) \
+		-initrd $(IMG_OUT) \
 		-append "earlyprintk=ttyS0,115200 rdinit=/init root=/dev/ram0 rootfstype=ramfs console=tty0 console=ttyS0 verbose debug" \
 		-nographic -m 512M
 
+
+# CLEANUP AFTER BUILD OR TESTING
 clean:
 	cargo clean
 	rm -rf $(OUT_DIR)
-	rm -rf $(ROOT_DIR)/target-memtest
 	rm -f Cargo.lock
 
 cleanall: clean
 	rm -rf $(BUILD_DIR)
 	rm -rf $(ROOT_DIR)/target
+
+
+help:
+	@printf 'Usage: make [target]\n\n'
+	@printf 'Targets:\n'
+	@printf '  all               Build kernel, initramfs, and tools\n'
+	@printf '  kernel            Build the Linux kernel\n'
+	@printf '  init              Build the init binary\n'
+	@printf '  busybox           Build BusyBox\n'
+	@printf '  memtest           Build MemTest86+\n'
+	@printf '  uefi-shell        Build UEFI Shell binary\n'
+	@printf '  tools             Build all filesystem and disk tools\n'
+	@printf '  rootfs            Create root filesystem and initramfs image\n'
+	@printf '  iso               Create bootable ISO image\n'
+	@printf '  release           Create release archive and checksums\n'
+	@printf '  github-release    Create GitHub release (requires gh CLI)\n'
+	@printf '  run               Run QEMU with kernel and initramfs\n'
+	@printf '  iso-test          Run QEMU with bootable ISO image\n'
+	@printf '  test              Run QEMU with verbose output for debugging\n'
+	@printf '  clean             Clean build artifacts (kernel, initramfs, tools)\n'
+	@printf '  cleanall          Clean all build artifacts including source directories\n'

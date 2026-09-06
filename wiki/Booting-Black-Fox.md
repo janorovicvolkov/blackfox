@@ -42,7 +42,7 @@ sync
 ```
 
 The ISO uses GRUB for both legacy BIOS and UEFI. Its menu contains the Black
-Fox kernel, initramfs, and the memory-test entry.
+Fox kernel, initramfs, Memtest86+, and an UEFI Shell built from source.
 
 ### 1.2. Boot the target machine
 

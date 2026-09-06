@@ -12,12 +12,14 @@ partition problems, or other things that made you can't boot to your Linux.
 ## Table of contents
 
 1. [Booting Black Fox](Booting-Black-Fox.md): Booting from ISO or from your own system
-2. [Architecture and Limitations](Architecture-and-Limitations.md): What's inside, what's deliberately left out
-3. [Supported Filesystems](Supported-Filesystems.md): What mounts out of the box vs what needs adding
-4. [Troubleshooting Black Fox](Troubleshooting-Black-Fox.md): When Black Fox itself fails to boot
-5. [Fixing Initramfs](Fixing-Initramfs.md): Dracut, mkinitcpio, or other initramfs tools with chroot
-6. [Fixing System Manager](Fixing-System-Manager.md): Masking units, editing config, rescue chroot
-7. [Fixing Disks and Partitions](Fixing-Disks-and-Partitions.md): Fdisk, mount, resize, corrupt partition tables
+2. [Memory Test](Memory-Test.md): Running Memtest86+ from the BIOS or UEFI
+3. [UEFI Shell](UEFI-Shell.md): Using the source-built EDK2 UEFI Shell
+4. [Architecture and Limitations](Architecture-and-Limitations.md): What's inside and what's deliberately left out
+5. [Supported Filesystems](Supported-Filesystems.md): What mounts out of the box vs what needs adding
+6. [Troubleshooting Black Fox](Troubleshooting-Black-Fox.md): When Black Fox itself fails to boot
+7. [Fixing Initramfs](Fixing-Initramfs.md): Dracut, mkinitcpio, or other initramfs tools with chroot
+8. [Fixing System Manager](Fixing-System-Manager.md): Masking units, editing config, rescue chroot
+9. [Fixing Disks and Partitions](Fixing-Disks-and-Partitions.md): Fdisk, mount, resize, corrupt partition tables
 
 ## Core principle (read this first)
 
