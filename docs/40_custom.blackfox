@@ -7,12 +7,14 @@ exec tail -n +3 $0
 #   /boot/blackfox
 #   /boot/blackfox.img
 menuentry "Black Fox" {
-    linux  /boot/blackfox console=tty0 console=ttyS0 gfxpayload=keep
+    set gfxmode=text
+    set gfxpayload=text
+    linux  /boot/blackfox console=tty0 console=ttyS0 quiet
     initrd /boot/blackfox.img
 }
 
 # If /boot is a separate partition and the files are copied to its top level,
 # use these paths instead:
 #   search --no-floppy --file --set=root /blackfox
-#   linux  /blackfox console=tty0 console=ttyS0 gfxpayload=keep
+#   linux  /blackfox console=tty0 console=ttyS0
 #   initrd /blackfox.img

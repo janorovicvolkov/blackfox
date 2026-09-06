@@ -47,22 +47,24 @@ make tools E2FSPROGS_VERSION=1.47.2 DOSFSTOOLS_VERSION=4.2 LK_VERSION=v1.0.0 \
 
 ## Why some `busybox` applets are now disabled?
 
-`mount`, `umount`, `cp`, `ls`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln`, `losetup`,
+`mount`, `umount`, `cp`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln`, `losetup`,
 `blkid`, `lsblk`, `fdisk`, `swapon`, `swapoff`, `mkswap`, `blockdev`, and `fsck` used to 
-come from `busybox`. Now that `lk` covers the first group (guarded `mount`, `umount`, `cp`,
-`ls`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln`) and `util-linux` covers the second (
+come from `busybox`. Now that `lk` covers the first group (guarded `mount`, `umount`,
+`cp`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln`) and `util-linux` covers the second (
 `fdisk`, `blkid`, `swapon`, `swapoff`, etc.), the `busybox:` `Makefile` target disables
-those specific applets in `busybox` `.config` before building it. So there's exactly one
-binary providing each command on `$PATH`, not two different implementations shadowing each
-other depending on install order. Everything else `busybox` provides (`sh`, `cat`, `vi`,
-`grep`, etc.) is untouched. `sfdisk` and `findmnt` were never `busybox` applets to begin
-with, they're pure additions from `util-linux`.
+those specialized applets in `busybox` `.config` before building it. Basic file commands
+remain available from `busybox`, so there's exactly one binary providing each command on
+`$PATH`, not two different implementations shadowing each other depending on install order.
+Everything else `busybox` provides (`sh`, `cat`, `vi`, `grep`, `ls`, etc.) is untouched.
+`sfdisk` and `findmnt` were never `busybox` applets to begin with, they're pure additions
+from `util-linux`.
 
 > ***GOTCHA:** Because of this, `make rootfs` (and therefore `make all`) depends on `tools`
 > running first. If you ever invoke rootfs underlying steps by hand and skip `make tools`,
-> you'll end up with no `mount`, `cp`, etc. at all, since `busybox` own copies are compiled
-> out. Always build through `make all` or `make rootfs`, not by cherry-picking individual
-> sub-targets out of order.*
+> you'll end up without the specialized `mount`, `fdisk`, or filesystem commands if the
+> static tools are skipped. Basic commands such as `ls` come from `busybox`. Always build
+> through `make all` or `make rootfs`, not by cherry-picking individual sub-targets out
+> of order.*
 
 ## Adding a tool that isn't automated (e.g. lvm2, cryptsetup)
 

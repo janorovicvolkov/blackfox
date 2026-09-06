@@ -100,11 +100,17 @@ FOX_BIN         := $(ROOT_DIR)/target/$(INIT_TARGET)/release/fox
 IMAGE_NAME      ?= blackfox
 KERNEL_OUT      := $(OUT_DIR)/$(IMAGE_NAME)
 SFS_OUT         := $(OUT_DIR)/$(IMAGE_NAME).img
+ISO_OUT         := $(OUT_DIR)/$(IMAGE_NAME).iso
+RELEASE_VERSION ?= 1.0.0
+RELEASE_TAG     ?= v$(RELEASE_VERSION)
+RELEASE_DIR     := $(OUT_DIR)/release
+RELEASE_ARCHIVE := $(RELEASE_DIR)/$(IMAGE_NAME)-$(RELEASE_TAG)-x86_64.tar.zst
+RELEASE_SUM     := $(RELEASE_ARCHIVE).sha256
 RAMDISK_SIZE    ?= 262144
 
 NPROC := $(shell nproc)
 
-.PHONY: all kernel busybox init fox-tool tools lk-tool ncurses-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool ddrescue-tool smartmontools-tool mdadm-tool gdisk-tool exfatprogs-tool inih-tool zlib-tool urcu-tool rootfs squashfs iso run test clean cleanall
+.PHONY: all kernel busybox init fox-tool tools lk-tool ncurses-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool ddrescue-tool smartmontools-tool mdadm-tool gdisk-tool exfatprogs-tool inih-tool zlib-tool urcu-tool rootfs squashfs iso run iso-test test release github-release clean cleanall
 
 all: rootfs kernel
 
@@ -117,7 +123,7 @@ kernel:
 	cd $(KERNEL_SRC) && \
 		make tinyconfig && \
 		$(KERNEL_SRC)/scripts/kconfig/merge_config.sh -O $(KERNEL_SRC) $(KERNEL_SRC)/.config $(ROOT_DIR)/configs/kernel.config && \
-		make alldefconfig && \
+			make olddefconfig && \
 		make -j$(NPROC) bzImage
 	mkdir -p $(OUT_DIR)
 	cp $(KERNEL_IMG) $(KERNEL_OUT)
@@ -142,7 +148,7 @@ busybox:
 	for cfg in CONFIG_CP CONFIG_MV CONFIG_RM CONFIG_MKDIR CONFIG_CHMOD CONFIG_CHOWN CONFIG_LN \
 	           CONFIG_MOUNT CONFIG_UMOUNT CONFIG_LOSETUP CONFIG_BLKID CONFIG_LSBLK CONFIG_ADDUSER \
 	           CONFIG_FDISK CONFIG_SFDISK CONFIG_FINDMNT CONFIG_SWAPON CONFIG_SWAPOFF CONFIG_SU \
-	           CONFIG_MKSWAP CONFIG_BLOCKDEV CONFIG_FSCK CONFIG_LS CONFIG_WHICH CONFIG_DELUSER \
+	           CONFIG_MKSWAP CONFIG_BLOCKDEV CONFIG_FSCK CONFIG_WHICH CONFIG_DELUSER \
 			   CONFIG_PASSWD CONFIG_LOGIN CONFIG_ADDGROUP CONFIG_DELGROUP CONFIG_CHPASSWD \
 			   CONFIG_ID CONFIG_WHOAMI CONFIG_SULOGIN CONFIG_VLOCK CONFIG_INIT CONFIG_GETTY \
 			   CONFIG_CTTYHACK CONFIG_RMDIR CONFIG_RMMOD CONFIG_STTY CONFIG_HOSTNAME CONFIG_UNAME \
@@ -530,14 +536,14 @@ rootfs: tools init busybox
 	chmod 1777 $(ROOTFS_DIR)/tmp
 	chmod 700  $(ROOTFS_DIR)/admin
 	cp $(OUT_DIR)/tools/* $(ROOTFS_DIR)/bin/ 2>/dev/null || true
-	chmod +x $(ROOTFS_DIR)/bin/* 2>/dev/null || true
 	cp $(OUT_DIR)/busybox $(ROOTFS_DIR)/bin/busybox
-	chmod +x $(ROOTFS_DIR)/bin/busybox
-	$(ROOTFS_DIR)/bin/busybox --install -s $(ROOTFS_DIR)/bin
+	( cd $(ROOTFS_DIR) && ./bin/busybox --install -s ./bin )
+	find $(ROOTFS_DIR)/bin -maxdepth 1 -type l -lname '$(ROOTFS_DIR)/bin/busybox' -exec sh -c 'for link do ln -sf busybox "$$link"; done' sh {} +
 	rm -f $(ROOTFS_DIR)/bin/install
+	chmod +x $(ROOTFS_DIR)/bin/* 2>/dev/null || true
 	cp $(OUT_DIR)/init $(ROOTFS_DIR)/init
 	chmod +x $(ROOTFS_DIR)/init
-	( cd $(ROOTFS_DIR) && find . -print0 | cpio --null -o -H newc ) | xz -9 > $(SFS_OUT)
+	( cd $(ROOTFS_DIR) && find . -print0 | cpio --null -o -H newc ) | xz --check=crc32 --lzma2=dict=1MiB > $(SFS_OUT)
 
 iso:
 	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(SFS_OUT) ]; then \
@@ -550,6 +556,27 @@ iso:
 	cp $(ROOT_DIR)/configs/grub.cfg $(BUILD_DIR)/iso/boot/grub/grub.cfg
 	grub-mkrescue -o $(OUT_DIR)/$(IMAGE_NAME).iso $(BUILD_DIR)/iso
 
+release:
+	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(SFS_OUT) ] || [ ! -f $(ISO_OUT) ]; then \
+		echo "ERROR: One or more required files not found. Please run 'make all iso' first."; \
+		exit 1; \
+	fi
+	command -v zstd >/dev/null || { echo "ERROR: zstd is required to create releases."; exit 1; }
+	rm -rf $(RELEASE_DIR)/stage
+	mkdir -p $(RELEASE_DIR)/stage/$(IMAGE_NAME)-$(RELEASE_TAG)
+	cp $(KERNEL_OUT) $(RELEASE_DIR)/stage/$(IMAGE_NAME)-$(RELEASE_TAG)/blackfox
+	cp $(SFS_OUT) $(RELEASE_DIR)/stage/$(IMAGE_NAME)-$(RELEASE_TAG)/blackfox.img
+	cp $(ISO_OUT) $(RELEASE_DIR)/stage/$(IMAGE_NAME)-$(RELEASE_TAG)/blackfox.iso
+	tar --zstd -cf $(RELEASE_ARCHIVE) -C $(RELEASE_DIR)/stage $(IMAGE_NAME)-$(RELEASE_TAG)
+	sha256sum $(RELEASE_ARCHIVE) > $(RELEASE_SUM)
+	rm -rf $(RELEASE_DIR)/stage
+	@printf 'Release archive: %s\nChecksum: %s\n' $(RELEASE_ARCHIVE) $(RELEASE_SUM)
+
+github-release: release
+	command -v gh >/dev/null || { echo "ERROR: GitHub CLI (gh) is required. Install it and run 'gh auth login'."; exit 1; }
+	gh auth status
+	gh release create $(RELEASE_TAG) $(RELEASE_ARCHIVE) $(RELEASE_SUM) --title "Black Fox $(RELEASE_TAG)" --generate-notes
+
 run:
 	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(SFS_OUT) ]; then \
 		echo "ERROR: Kernel or initramfs image not found. Please run 'make all' first."; \
@@ -558,8 +585,19 @@ run:
 	qemu-system-x86_64 \
 	  -kernel $(KERNEL_OUT) \
 	  -initrd $(SFS_OUT) \
-	  -append "console=tty0 console=ttyS0 quiet" \
+	  -append "rdinit=/init root=/dev/ram0 rootfstype=ramfs console=tty0 quiet" \
 	  -vga std \
+	  -m 512M
+
+iso-test:
+	if [ ! -f $(OUT_DIR)/$(IMAGE_NAME).iso ]; then \
+		echo "ERROR: ISO image not found. Please run 'make iso' first."; \
+		exit 1; \
+	fi
+	qemu-system-x86_64 \
+	  -cdrom $(OUT_DIR)/$(IMAGE_NAME).iso \
+	  -boot d \
+	  -nographic \
 	  -m 512M
 
 test:
@@ -570,7 +608,7 @@ test:
 	qemu-system-x86_64 \
 	    -kernel $(KERNEL_OUT) \
 		-initrd $(SFS_OUT) \
-		-append "earlyprintk=ttyS0,115200 console=ttyS0 debug" \
+		-append "earlyprintk=ttyS0,115200 rdinit=/init root=/dev/ram0 rootfstype=ramfs console=tty0 console=ttyS0 verbose debug" \
 		-nographic -m 512M
 
 clean:

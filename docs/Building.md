@@ -10,6 +10,7 @@
 - `tar`
 - `lzip` (for GNU ddrescue)
 - `xz`
+- `zstd` (for release archives)
 - C toolchain (`gcc` + `binutils`)
 - C++ toolchain (`g++` with static libstdc++/libgcc support)
 - `cpio`
@@ -48,7 +49,15 @@ make kernel     # download and build the kernel
 make tools      # download and statically build all recovery tools -> out/tools/<binaries>
 make rootfs     # create out/blackfox.img
 make iso        # create out/blackfox.iso
+make release    # create out/release/blackfox-<tag>-x86_64.tar.zst
 ```
+
+`make release` packages the kernel, initramfs, and ISO into a Zstandard-compressed
+tar archive and writes a SHA-256 checksum beside it. Set `RELEASE_TAG`, for
+example `make release RELEASE_TAG=v1.0.0`, to choose the artifact name.
+
+After installing and authenticating the GitHub CLI with `gh auth login`, publish
+the archive with `make github-release RELEASE_TAG=v1.0.0`.
 
 ## Makefile targets, one by one
 
@@ -62,7 +71,7 @@ starts from `tinyconfig`, merges in `configs/kernel.config`, then builds `bzImag
 
 Downloads `busybox` (`BUSYBOX_VERSION`), configures with `make defconfig`, forces
 `CONFIG_STATIC=y`, disables `CONFIG_TC`, and disables the applets now provided by `lk`
-and `util-linux` (`ls`, `cp`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln`, `mount`,
+and `util-linux` (`cp`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln`, `mount`,
 `umount`, `losetup`, `blkid`, `lsblk`, `fdisk`, `swapon`, `swapoff`, `mkswap`, `blockdev`,
 `fsck`) so there's exactly one binary providing each command. See [Extending Tools](Extending-Tools.md) for why. Then builds. Statically linked so it runs without a dynamic linker.
 
@@ -89,10 +98,9 @@ each one produces and how to pin or bump their versions (`E2FSPROGS_VERSION`,
 `umount`, and the other selected util-linux commands. The staged ncurses
 library is used only during the build and is not copied into the image.
 
-Because `busybox` own copies of `mount`, `cp`, etc. are compiled out (see above), 
-rootfs depends on tools running first, always build through `make all` or `make rootfs`
-rather than invoking individual sub-targets like `util-linux-tool` on their own and
-skipping the rest.
+The rootfs depends on the selected static tools being available, so always build
+through `make all` or `make rootfs` rather than invoking individual sub-targets
+like `util-linux-tool` on their own and skipping the rest.
 
 LVM (`lvm2`) and LUKS (`cryptsetup`) userspace tools are not auto-built here, both pull
 in dependency chains (`libdevmapper`, `libpopt`, `json-c`, `libargon2`, etc.) that are
@@ -131,11 +139,36 @@ GRUB partition and the files are copied to its top level, use `/blackfox` and
 `/blackfox.img` in the entry instead. Verify the generated menu before
 rebooting and keep the existing OS entry available.
 
-### `run` or `test`
+### `run`, `test`, or `iso-test`
 
-Boot the built image in QEMU. `run` opens a VM window while `test` runs
-`-nographic -serial mon:stdio` for terminal-only output, handy for fast
-iteration.
+Boot the built image in QEMU:
+
+```bash
+make run
+```
+
+`run` opens a VM window and displays the recovery banner and shell on the
+guest's VGA console. Close the QEMU window, or press `Ctrl+C` in the terminal
+that launched it, to stop QEMU.
+
+For terminal-only testing without a VM window, use:
+
+```bash
+make test
+```
+
+To test the actual ISO and GRUB boot path in the terminal, use:
+
+```bash
+make iso-test
+```
+
+Build the ISO first with `make iso`. Stop either terminal-only test with
+`Ctrl+C`.
+
+The initramfs is compressed with conservative XZ settings (`LZMA2` with a
+1 MiB dictionary and `CRC32`) because the kernel's built-in XZ decoder does not
+accept every userspace `xz` configuration.
 
 ### `clean` or `cleanall`
 

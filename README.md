@@ -27,7 +27,9 @@ and base applets, while additional recovery utilities are bundled as static bina
   more informations.
 - Produces: `out/blackfox.img` (initramfs initrd), `out/blackfox` (kernel image), and
   `out/blackfox.iso` (bootable ISO).
-- `make test` runs QEMU in terminal-only mode while `make run` opens a VM window.
+- `make run` opens a VM window with the recovery shell inside the guest;
+  `make test` runs the kernel and initramfs in terminal-only mode;
+  `make iso-test` boots the generated ISO through GRUB in terminal-only mode.
 
 ## Prerequisites
 
@@ -36,6 +38,7 @@ and base applets, while additional recovery utilities are bundled as static bina
 - `tar`
 - `lzip` (for the GNU ddrescue source archive)
 - `xz`
+- `zstd` (for release archives)
 - C toolchain (`gcc` + `binutils`)
 - C++ toolchain (`g++` with static libstdc++/libgcc support)
 - `cpio`
@@ -69,7 +72,12 @@ make kernel     # download and build kernel
 make tools      # download and statically build recovery tools -> out/tools/<binaries>
 make rootfs     # create out/blackfox.img
 make iso        # create bootable ISO
+make release    # create out/release/blackfox-<tag>-x86_64.tar.zst
 ```
+
+The release archive contains the kernel, initramfs, and ISO, plus a SHA-256
+checksum file. To publish it to the configured GitHub repository, install and
+authenticate the GitHub CLI, then run `make github-release RELEASE_TAG=v1.0.0`.
 
 See [Building](docs/Building.md) for what each target does in more detail.
 
@@ -109,7 +117,10 @@ make kernel
 
 - `busybox` should be built statically (`CONFIG_STATIC=y`) so it runs cleanly in the blackfox.img.
 - `/bin` (already on `$PATH`) is pre-populated with statically-built filesystem, partition, imaging, health, and recovery tools via `make tools`, including `ddrescue`, `smartctl`, `mdadm`, `sgdisk`, `mkfs.exfat`, `fsck.exfat`, and `dump.exfat`. See [Fixing Disks and Partitions](wiki/Fixing-Disks-and-Partitions.md) for usage. `/bin/others` itself is where you drop in *extra* tools you build by hand (see [Extending Tools](docs/Extending-Tools.md)).
-- `busybox`'s own `ls`, `cp`, `mv`, `rm`, `mkdir`, `chmod`, `chown`, `ln`, `mount`, `umount`, `losetup`, `blkid`, `lsblk`, `fdisk`, `swapon`, `swapoff`, `mkswap`, `blockdev`, `fsck` applets are disabled in the `busybox` target `.config` (see [Extending Tools](docs/Extending-Tools.md)) so those commands only ever resolve to the `lk` or `util-linux` binaries above, not two clashing implementations. Because of this, always build through `make all` or `make rootfs` if `make tools` gets skipped, those commands won't exist at all.
+- BusyBox provides the basic shell and file commands such as `sh`, `ls`, `cp`,
+  `mv`, `rm`, `mkdir`, `chmod`, `chown`, and `ln`. Specialized filesystem and
+  partition commands are replaced by the selected static util-linux tools such
+  as `mount`, `umount`, `fdisk`, `blkid`, and `fsck`.
 - Tool versions are pinned in the `Makefile`: `LK_VERSION` defaults to `main`, while `NCURSES_VERSION`, `UTIL_LINUX_VERSION`, `XFSPROGS_VERSION`, `BTRFSPROGS_VERSION`, `F2FS_TOOLS_VERSION`, `NTFS3G_VERSION`, `TESTDISK_VERSION`, and `RSYNC_VERSION` select the other tool sources. Set them explicitly for reproducible builds, for example `make tools LK_VERSION=v1.0.0`.
 - If you see kernel config warnings during `merge_config.sh`, confirm the desired options are enabled in `configs/kernel.config`.
 - Full build documentation (Makefile targets, adding your own static tools): [Click here](docs/Home.md).

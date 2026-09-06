@@ -1,27 +1,44 @@
 use liblk::*;
 use nix::mount::MsFlags;
-use nix::unistd::{chdir, setsid};
+use nix::unistd::chdir;
 use std::env;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 const CYAN_BOLD: &str = "\x1b[1;36m";
 const RESET: &str = "\x1b[0m";
 
+fn mount_options(flags: MsFlags) -> String {
+    let mut options = Vec::new();
+    if flags.contains(MsFlags::MS_NOSUID) {
+        options.push("nosuid");
+    }
+    if flags.contains(MsFlags::MS_NODEV) {
+        options.push("nodev");
+    }
+    if flags.contains(MsFlags::MS_NOEXEC) {
+        options.push("noexec");
+    }
+    options.join(",")
+}
+
 fn mount_fs(source: &str, target: &str, fstype: &str, flags: MsFlags) {
     let path = Path::new(target);
-    if let Err(e) = fs::lkcreate(path) {
-        ui::error(&format!(
-            "Failed to create {} directory! Err: {}",
-            target, e
-        ));
-        std::thread::sleep(std::time::Duration::from_secs(3));
-        clear();
+    if !path.exists() {
+        if let Err(e) = fs::lkcreate(path) {
+            ui::error(&format!(
+                "Failed to create {} directory! Err: {}",
+                target, e
+            ));
+            std::thread::sleep(std::time::Duration::from_secs(3));
+            clear();
+        }
     }
-    if let Err(e) = fs::lkmount(source, path, fstype, format!("{:?}", flags).as_str()) {
+    let options = mount_options(flags);
+    if let Err(e) = fs::lkmount(source, path, fstype, &options) {
         ui::error(&format!(
             "Failed to mount {} on {}! Err: {}",
             fstype, target, e
@@ -42,11 +59,11 @@ fn bootup() {
     print!("{CYAN_BOLD}");
     println!("");
     println!(
-        "                    BLACK FOX RECOVERY {}",
+        "                    BLACK FOX {}",
         env!("CARGO_PKG_VERSION")
     );
     println!("");
-    println!("       \"A small recovery shell for emergency maintenance\"");
+    println!("      \"A small recovery shell for emergency maintenance\"");
     println!("");
     print!("{RESET}");
 }
@@ -54,14 +71,27 @@ fn bootup() {
 fn banner() {
     print!("{CYAN_BOLD}");
     println!("");
-    println!("BLACK FOX RECOVERY {}", env!("CARGO_PKG_VERSION"));
+    println!("                    BLACK FOX {}", env!("CARGO_PKG_VERSION"));
     println!("");
     println!("Black Fox: \"What should we fix today, admin?\"");
     println!("");
-    println!("> Note: This is a minimal recovery shell. Only critical commands are available.");
+    println!("> IMPORTANT NOTE: This is a minimal recovery shell. Only critical commands are available!");
     println!("> Help: Type \"lk -w\" to check if a command exists.");
     println!("");
     print!("{RESET}");
+}
+
+fn active_console() -> Option<&'static str> {
+    let cmdline = std::fs::read_to_string("/proc/cmdline").ok()?;
+    let device = if cmdline.contains("console=tty0") {
+        "/dev/tty0"
+    } else if cmdline.contains("console=ttyS0") {
+        "/dev/ttyS0"
+    } else {
+        return None;
+    };
+    OpenOptions::new().read(true).write(true).open(device).ok()?;
+    Some(device)
 }
 
 fn main() {
@@ -92,16 +122,27 @@ fn main() {
         env::set_var("PATH", "/bin:/sbin:/bin/others:/sbin/others");
         env::set_var("TERM", "linux");
     }
-    let _ = Command::new("/bin/busybox")
-        .args(["--install", "-s", "/bin"])
-        .status();
-    let _ = setsid();
+    let _ = fs::lkremove(Path::new("/root"));
     banner();
-    let err = Command::new("/bin/busybox")
-        .arg("sh")
+    let mut shell = Command::new("/bin/busybox");
+    shell
+        .args(["setsid", "-c", "sh"])
         .env("PS1", "\x1b[1;36m[ blackfox@admin ] #\x1b[0m ")
-        .current_dir("/admin")
-        .exec();
+        .current_dir("/admin");
+    if let Some(console) = active_console() {
+        let open_console = || {
+            OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(console)
+                .map(Stdio::from)
+        };
+        shell
+            .stdin(open_console().unwrap_or_else(|_| Stdio::inherit()))
+            .stdout(open_console().unwrap_or_else(|_| Stdio::inherit()))
+            .stderr(open_console().unwrap_or_else(|_| Stdio::inherit()));
+    }
+    let err = shell.exec();
     ui::error(&format!(
         "FATAL: Failed to execute BusyBox shell! Err: {}",
         err

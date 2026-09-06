@@ -11,6 +11,10 @@ program is PID 1, mounts `/proc`, `/sys`, `/dev`, and `/tmp`, then starts the
 filesystem. The initramfs image is passed as the kernel initrd or root image,
 this is not a distro-generated cpio initramfs.
 
+For a local QEMU boot after building, use `make run` to open the graphical VM
+with the recovery shell inside the guest. Use `make test` for terminal-only
+QEMU output. Both targets boot `out/blackfox` with `out/blackfox.img`.
+
 ## 1. Boot from ISO (recommended for physical USB or CD)
 
 Download a release ISO, or build one locally with `make iso`. Writing the ISO
@@ -71,7 +75,9 @@ Add this entry to `/etc/grub.d/40_custom`:
 
 ```text
 menuentry "Black Fox" {
-	linux  /boot/blackfox console=ttyS0 console=tty0 gfxpayload=keep
+	set gfxmode=text
+	set gfxpayload=text
+	linux  /boot/blackfox console=tty0 console=ttyS0
 	initrd /boot/blackfox.img
 }
 ```
@@ -105,7 +111,7 @@ Create `/boot/loader/entries/blackfox.conf`:
 title   Black Fox Recovery
 linux   /EFI/BlackFox/blackfox.efi
 initrd  /EFI/BlackFox/blackfox.img
-options console=ttyS0 console=tty0 gfxpayload=keep
+options console=tty0 console=ttyS0
 ```
 
 The paths in a systemd-boot entry are relative to the EFI System Partition.
@@ -120,7 +126,7 @@ Other bootloaders need equivalent kernel and initrd entries. Use
 image, and preserve this command line:
 
 ```text
-console=ttyS0 console=tty0 gfxpayload=keep
+console=tty0 console=ttyS0
 ```
 
 Consult the bootloader's documentation for its entry syntax.

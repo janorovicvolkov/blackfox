@@ -1,5 +1,5 @@
 use crossterm::cursor::{Hide, MoveTo, Show};
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyModifiers};
 use crossterm::execute;
 use crossterm::style::{
     Attribute, Color, ResetColor, SetAttribute, SetBackgroundColor, SetForegroundColor,
@@ -9,7 +9,6 @@ use std::env;
 use std::fs;
 use std::io::{self, Read, Stdout, Write};
 use std::path::{Path, PathBuf};
-use std::time::Duration;
 
 struct Editor {
     file: PathBuf,
@@ -375,6 +374,58 @@ fn center_text(text: &str, width: usize) -> String {
     format!("{}{}{}", " ".repeat(left), clipped, " ".repeat(right))
 }
 
+fn read_key() -> io::Result<(KeyCode, KeyModifiers)> {
+    let mut input = io::stdin();
+    let mut byte = [0u8; 1];
+    input.read_exact(&mut byte)?;
+    match byte[0] {
+        3 => Ok((KeyCode::Char('c'), KeyModifiers::CONTROL)),
+        8 | 127 => Ok((KeyCode::Backspace, KeyModifiers::empty())),
+        9 => Ok((KeyCode::Tab, KeyModifiers::empty())),
+        10 | 13 => Ok((KeyCode::Enter, KeyModifiers::empty())),
+        27 => {
+            let mut sequence = [0u8; 2];
+            input.read_exact(&mut sequence[..1])?;
+            if sequence[0] != b'[' {
+                return Ok((KeyCode::Esc, KeyModifiers::empty()));
+            }
+            input.read_exact(&mut sequence[1..])?;
+            let code = match sequence {
+                [b'[', b'A'] => KeyCode::Up,
+                [b'[', b'B'] => KeyCode::Down,
+                [b'[', b'C'] => KeyCode::Right,
+                [b'[', b'D'] => KeyCode::Left,
+                [b'[', b'H'] => KeyCode::Home,
+                [b'[', b'F'] => KeyCode::End,
+                _ => KeyCode::Esc,
+            };
+            Ok((code, KeyModifiers::empty()))
+        }
+        first => {
+            let width = if first < 0x80 {
+                1
+            } else if first & 0xe0 == 0xc0 {
+                2
+            } else if first & 0xf0 == 0xe0 {
+                3
+            } else {
+                4
+            };
+            let mut bytes = vec![first];
+            for _ in 1..width {
+                let mut continuation = [0u8; 1];
+                input.read_exact(&mut continuation)?;
+                bytes.push(continuation[0]);
+            }
+            let character = String::from_utf8(bytes)
+                .ok()
+                .and_then(|value| value.chars().next())
+                .unwrap_or('\u{fffd}');
+            Ok((KeyCode::Char(character), KeyModifiers::empty()))
+        }
+    }
+}
+
 fn prompt(stdout: &mut Stdout, label: &str) -> io::Result<String> {
     let (_, height) = terminal::size()?;
     execute!(
@@ -386,8 +437,8 @@ fn prompt(stdout: &mut Stdout, label: &str) -> io::Result<String> {
     stdout.flush()?;
     let mut input = String::new();
     loop {
-        if let Event::Key(key) = event::read()? {
-            match key.code {
+        let (code, modifiers) = read_key()?;
+        match code {
                 KeyCode::Enter => break,
                 KeyCode::Esc => {
                     input.clear();
@@ -396,17 +447,16 @@ fn prompt(stdout: &mut Stdout, label: &str) -> io::Result<String> {
                 KeyCode::Backspace => {
                     input.pop();
                 }
-                KeyCode::Char(character) if key.modifiers.is_empty() => input.push(character),
+                KeyCode::Char(character) if modifiers.is_empty() => input.push(character),
                 _ => {}
-            }
-            execute!(
-                stdout,
-                MoveTo(label.len() as u16, height.saturating_sub(1)),
-                Clear(ClearType::UntilNewLine)
-            )?;
-            write!(stdout, "{input}")?;
-            stdout.flush()?;
         }
+        execute!(
+            stdout,
+            MoveTo(label.len() as u16, height.saturating_sub(1)),
+            Clear(ClearType::UntilNewLine)
+        )?;
+        write!(stdout, "{input}")?;
+        stdout.flush()?;
     }
     Ok(input)
 }
@@ -431,15 +481,7 @@ fn main() -> io::Result<()> {
 fn run(editor: &mut Editor, stdout: &mut Stdout) -> io::Result<()> {
     loop {
         editor.draw(stdout)?;
-        if !event::poll(Duration::from_millis(250))? {
-            continue;
-        }
-        let Event::Key(KeyEvent {
-            code, modifiers, ..
-        }) = event::read()?
-        else {
-            continue;
-        };
+        let (code, modifiers) = read_key()?;
         if modifiers.contains(KeyModifiers::CONTROL) {
             match code {
                 KeyCode::Char('x') => {
