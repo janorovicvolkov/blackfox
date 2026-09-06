@@ -595,7 +595,7 @@ release:
 github-release: release
 	command -v gh >/dev/null || { echo "ERROR: GitHub CLI (gh) is required. Install it and run 'gh auth login'."; exit 1; }
 	gh auth status
-	gh release create $(RELEASE_TAG) $(RELEASE_ARCHIVE) $(RELEASE_SUM) --title "$(RELEASE_TAG)" --generate-notes
+	gh release create $(RELEASE_TAG) $(RELEASE_ISO) $(RELEASE_SUM_ISO) $(RELEASE_ARCHIVE) $(RELEASE_SUM) --title "$(RELEASE_TAG)" --generate-notes
 
 
 # QEMU TESTING
