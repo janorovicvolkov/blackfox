@@ -585,7 +585,7 @@ release:
 	cp $(KERNEL_OUT) $(RELEASE_DIR)/stage/blackfox
 	cp $(IMG_OUT) $(RELEASE_DIR)/stage/blackfox.img
 	cp $(ISO_OUT) $(RELEASE_ISO)
-	tar --zstd -cf $(RELEASE_ARCHIVE) -C $(RELEASE_DIR)/stage $(IMAGE_NAME)-$(RELEASE_TAG)
+	tar --zstd -cf $(RELEASE_ARCHIVE) -C $(RELEASE_DIR)/stage blackfox blackfox.img
 	sha256sum $(RELEASE_ARCHIVE) > $(RELEASE_SUM)
 	sha256sum $(RELEASE_ISO) > $(RELEASE_SUM_ISO)
 	@printf 'Release Archive: %s\nChecksum: %s\n' $(RELEASE_ARCHIVE) $(RELEASE_SUM)
@@ -594,7 +594,11 @@ release:
 github-release: release
 	command -v gh >/dev/null || { echo "ERROR: GitHub CLI (gh) is required. Install it and run 'gh auth login'."; exit 1; }
 	gh auth status
-	gh release create $(RELEASE_TAG) $(RELEASE_ISO) $(RELEASE_SUM_ISO) $(RELEASE_ARCHIVE) $(RELEASE_SUM) --title "$(RELEASE_TAG)" --generate-notes
+	if gh release view $(RELEASE_TAG) >/dev/null 2>&1; then \
+		gh release upload $(RELEASE_TAG) $(RELEASE_ISO) $(RELEASE_SUM_ISO) $(RELEASE_ARCHIVE) $(RELEASE_SUM) --clobber; \
+	else \
+		gh release create $(RELEASE_TAG) $(RELEASE_ISO) $(RELEASE_SUM_ISO) $(RELEASE_ARCHIVE) $(RELEASE_SUM) --title "$(RELEASE_TAG)" --generate-notes; \
+	fi
 
 
 # QEMU TESTING
