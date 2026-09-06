@@ -26,6 +26,9 @@ ROOT_DIR        := $(shell pwd)
 BUILD_DIR       := $(ROOT_DIR)/build
 OUT_DIR         := $(ROOT_DIR)/out
 ROOTFS_DIR      := $(BUILD_DIR)/rootfs
+MEMTEST_SRC     := $(ROOT_DIR)/src/memtest.rs
+MEMTEST_BIOS    := $(OUT_DIR)/memtest
+MEMTEST_UEFI    := $(OUT_DIR)/memtest.efi
 KERNEL_SRC      := $(BUILD_DIR)/linux-$(KERNEL_XZ)
 KERNEL_TAR      := linux-$(KERNEL_XZ).tar.xz
 KERNEL_URL      := https://www.kernel.org/pub/linux/kernel/v7.x/$(KERNEL_TAR)
@@ -105,12 +108,13 @@ RELEASE_VERSION ?= 1.0.0
 RELEASE_TAG     ?= v$(RELEASE_VERSION)
 RELEASE_DIR     := $(OUT_DIR)/release
 RELEASE_ARCHIVE := $(RELEASE_DIR)/$(IMAGE_NAME)-$(RELEASE_TAG)-x86_64.tar.zst
-RELEASE_SUM     := $(RELEASE_ARCHIVE).sha256
-RAMDISK_SIZE    ?= 262144
+RELEASE_ISO     := $(RELEASE_DIR)/$(IMAGE_NAME)-$(RELEASE_TAG)-x86_64.iso
+RELEASE_SUM     := $(RELEASE_DIR)/$(IMAGE_NAME)-$(RELEASE_TAG)-x86_64.tar.zst.sha256
+RELEASE_SUM_ISO := $(RELEASE_DIR)/$(IMAGE_NAME)-$(RELEASE_TAG)-x86_64.iso.sha256
 
 NPROC := $(shell nproc)
 
-.PHONY: all kernel busybox init fox-tool tools lk-tool ncurses-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool ddrescue-tool smartmontools-tool mdadm-tool gdisk-tool exfatprogs-tool inih-tool zlib-tool urcu-tool rootfs squashfs iso run iso-test test release github-release clean cleanall
+.PHONY: all kernel busybox init fox-tool memtest tools lk-tool ncurses-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool ddrescue-tool smartmontools-tool mdadm-tool gdisk-tool exfatprogs-tool inih-tool zlib-tool urcu-tool rootfs squashfs iso run iso-test test release github-release clean cleanall
 
 all: rootfs kernel
 
@@ -176,6 +180,20 @@ fox-tool:
 	cp $(FOX_BIN) $(OUT_DIR)/tools/fox
 	strip $(OUT_DIR)/tools/fox 2>/dev/null || true
 	chmod +x $(OUT_DIR)/tools/fox
+
+# RUST MEMTEST
+#
+# BIOS uses a Multiboot2 32-bit ELF; UEFI uses a PE/COFF EFI application.
+# Both test only memory reported as available by the firmware.
+
+memtest:
+	rustup run nightly-2026-08-01 cargo rustc --manifest-path $(ROOT_DIR)/memtest/Cargo.toml --target-dir $(ROOT_DIR)/target-memtest -Z build-std=core --target i686-unknown-linux-gnu --release --bin memtest -- \
+		-C opt-level=2 -C panic=abort -C relocation-model=static -C linker=rust-lld \
+		-C link-arg=-T$(ROOT_DIR)/src/memtest-bios.ld --cfg bios
+	cp $(ROOT_DIR)/target-memtest/i686-unknown-linux-gnu/release/memtest $(MEMTEST_BIOS)
+	rustc --target x86_64-unknown-uefi -C opt-level=2 -C panic=abort \
+		--crate-type bin --cfg uefi $(MEMTEST_SRC) -o $(MEMTEST_UEFI)
+	@file $(MEMTEST_BIOS) $(MEMTEST_UEFI)
 
 # TOOLS BUILD
 #
@@ -550,11 +568,20 @@ iso:
 		echo "ERROR: Kernel or initramfs image not found. Please run 'make all' first."; \
 		exit 1; \
 	fi
+	@if [ ! -d /usr/lib/grub/i386-pc ] || [ ! -d /usr/lib/grub/x86_64-efi ] || [ ! -d /usr/lib/grub/i386-efi ]; then \
+		echo "ERROR: Missing GRUB platform modules. Need i386-pc, i386-efi, and x86_64-efi."; \
+		echo "Install grub-pc-bin and grub-efi-amd64-bin (or your distro's equivalents)."; \
+		exit 1; \
+	fi
+	$(MAKE) memtest
+	rm -rf $(BUILD_DIR)/iso
 	mkdir -p $(BUILD_DIR)/iso/boot/grub
 	cp $(KERNEL_OUT) $(BUILD_DIR)/iso/boot/blackfox
 	cp $(SFS_OUT) $(BUILD_DIR)/iso/boot/blackfox.img
+	cp $(MEMTEST_BIOS) $(BUILD_DIR)/iso/boot/memtest
+	cp $(MEMTEST_UEFI) $(BUILD_DIR)/iso/boot/memtest.efi
 	cp $(ROOT_DIR)/configs/grub.cfg $(BUILD_DIR)/iso/boot/grub/grub.cfg
-	grub-mkrescue -o $(OUT_DIR)/$(IMAGE_NAME).iso $(BUILD_DIR)/iso
+	grub-mkrescue -o $(ISO_OUT) $(BUILD_DIR)/iso -- -volid BLACKFOX
 
 release:
 	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(SFS_OUT) ] || [ ! -f $(ISO_OUT) ]; then \
@@ -564,18 +591,20 @@ release:
 	command -v zstd >/dev/null || { echo "ERROR: zstd is required to create releases."; exit 1; }
 	rm -rf $(RELEASE_DIR)/stage
 	mkdir -p $(RELEASE_DIR)/stage/$(IMAGE_NAME)-$(RELEASE_TAG)
-	cp $(KERNEL_OUT) $(RELEASE_DIR)/stage/$(IMAGE_NAME)-$(RELEASE_TAG)/blackfox
-	cp $(SFS_OUT) $(RELEASE_DIR)/stage/$(IMAGE_NAME)-$(RELEASE_TAG)/blackfox.img
-	cp $(ISO_OUT) $(RELEASE_DIR)/stage/$(IMAGE_NAME)-$(RELEASE_TAG)/blackfox.iso
-	tar --zstd -cf $(RELEASE_ARCHIVE) -C $(RELEASE_DIR)/stage $(IMAGE_NAME)-$(RELEASE_TAG)
+	cp $(KERNEL_OUT) $(RELEASE_DIR)/stage/blackfox-$(RELEASE_TAG)
+	cp $(SFS_OUT) $(RELEASE_DIR)/stage/blackfox-$(RELEASE_TAG).img
+	cp $(ISO_OUT) $(RELEASE_ISO)
+	tar --zstd -cf $(RELEASE_ARCHIVE) -C $(RELEASE_DIR)/stage $(RELEASE_ARCHIVE)
 	sha256sum $(RELEASE_ARCHIVE) > $(RELEASE_SUM)
+	sha256sum $(RELEASE_ISO) > $(RELEASE_SUM_ISO)
 	rm -rf $(RELEASE_DIR)/stage
-	@printf 'Release archive: %s\nChecksum: %s\n' $(RELEASE_ARCHIVE) $(RELEASE_SUM)
+	@printf 'Release Archive: %s\nChecksum: %s\n' $(RELEASE_ARCHIVE) $(RELEASE_SUM)
+	@printf 'Release ISO: %s\nChecksum: %s\n' $(RELEASE_ISO) $(RELEASE_SUM_ISO)
 
 github-release: release
 	command -v gh >/dev/null || { echo "ERROR: GitHub CLI (gh) is required. Install it and run 'gh auth login'."; exit 1; }
 	gh auth status
-	gh release create $(RELEASE_TAG) $(RELEASE_ARCHIVE) $(RELEASE_SUM) --title "Black Fox $(RELEASE_TAG)" --generate-notes
+	gh release create $(RELEASE_TAG) $(RELEASE_ARCHIVE) $(RELEASE_SUM) --title "$(RELEASE_TAG)" --generate-notes
 
 run:
 	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(SFS_OUT) ]; then \
@@ -614,6 +643,7 @@ test:
 clean:
 	cargo clean
 	rm -rf $(OUT_DIR)
+	rm -rf $(ROOT_DIR)/target-memtest
 	rm -f Cargo.lock
 
 cleanall: clean

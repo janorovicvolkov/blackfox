@@ -14,7 +14,7 @@
 - C toolchain (`gcc` + `binutils`)
 - C++ toolchain (`g++` with static libstdc++/libgcc support)
 - `cpio`
-- GRUB toolchain (`grub-mkrescue` + `xorriso`)
+- GRUB and ISO tools (`grub-mkrescue` + `xorriso`)
 - `qemu-system-x86_64`
 - Rust toolchain (`rustup` + `cargo`)
 - `git`

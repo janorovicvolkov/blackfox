@@ -41,9 +41,8 @@ dd if=/path/to/blackfox.iso of=/dev/<your-usb-device> bs=4M status=progress conv
 sync
 ```
 
-The ISO is built with `grub-mkrescue`, so it is a hybrid image suitable for
-direct writing to removable media. It includes BIOS and UEFI boot support when
-the host GRUB toolchain provides both targets.
+The ISO uses GRUB for both legacy BIOS and UEFI. Its menu contains the Black
+Fox kernel, initramfs, and the memory-test entry.
 
 ### 1.2. Boot the target machine
 
@@ -75,9 +74,7 @@ Add this entry to `/etc/grub.d/40_custom`:
 
 ```text
 menuentry "Black Fox" {
-	set gfxmode=text
-	set gfxpayload=text
-	linux  /boot/blackfox console=tty0 console=ttyS0
+	linux  /boot/blackfox console=ttyS0 console=tty0 quiet
 	initrd /boot/blackfox.img
 }
 ```
@@ -111,7 +108,7 @@ Create `/boot/loader/entries/blackfox.conf`:
 title   Black Fox Recovery
 linux   /EFI/BlackFox/blackfox.efi
 initrd  /EFI/BlackFox/blackfox.img
-options console=tty0 console=ttyS0
+options console=ttyS0 console=tty0 quiet
 ```
 
 The paths in a systemd-boot entry are relative to the EFI System Partition.
@@ -126,7 +123,7 @@ Other bootloaders need equivalent kernel and initrd entries. Use
 image, and preserve this command line:
 
 ```text
-console=tty0 console=ttyS0
+console=ttyS0 console=tty0 quiet
 ```
 
 Consult the bootloader's documentation for its entry syntax.

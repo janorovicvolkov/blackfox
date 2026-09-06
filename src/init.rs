@@ -8,9 +8,6 @@ use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::{Command, Stdio};
 
-const CYAN_BOLD: &str = "\x1b[1;36m";
-const RESET: &str = "\x1b[0m";
-
 fn mount_options(flags: MsFlags) -> String {
     let mut options = Vec::new();
     if flags.contains(MsFlags::MS_NOSUID) {
@@ -54,59 +51,71 @@ fn clear() {
     }
 }
 
+fn print(msg: &str) {
+    if let Ok(mut console) = OpenOptions::new().write(true).open("/dev/console") {
+        let formatted = format!("\x1b[1;36m{}\x1b[0m\n", msg);
+        let _ = console.write_all(formatted.as_bytes());
+    }
+}
+
+fn space() {
+    if let Ok(mut console) = OpenOptions::new().write(true).open("/dev/console") {
+        let _ = console.write_all(b"\n");
+    }
+}
+
 fn bootup() {
     clear();
-    print!("{CYAN_BOLD}");
-    println!("");
-    println!(
-        "                    BLACK FOX {}",
+    space();
+    print(&format!(
+        "                        BLACK FOX {}",
         env!("CARGO_PKG_VERSION")
-    );
-    println!("");
-    println!("      \"A small recovery shell for emergency maintenance\"");
-    println!("");
-    print!("{RESET}");
+    ));
+    space();
+    print("      \"A small recovery shell for emergency maintenance\"");
+    space();
 }
 
 fn banner() {
-    print!("{CYAN_BOLD}");
-    println!("");
-    println!("                    BLACK FOX {}", env!("CARGO_PKG_VERSION"));
-    println!("");
-    println!("Black Fox: \"What should we fix today, admin?\"");
-    println!("");
-    println!("> IMPORTANT NOTE: This is a minimal recovery shell. Only critical commands are available!");
-    println!("> Help: Type \"lk -w\" to check if a command exists.");
-    println!("");
-    print!("{RESET}");
+    space();
+    print(&format!("                        BLACK FOX {}", env!("CARGO_PKG_VERSION")));
+    space();
+    print("Black Fox: \"What should we fix today, admin?\"");
+    space();
+    space();
+    print("> IMPORTANT NOTE: This is a minimal recovery shell. Only critical commands are available!");
+    print("> Help: Type \"lk -w\" to check if a command exists.");
+    space();
+}
+
+fn resolve_console_device(cmdline: &str) -> Option<&'static str> {
+    if cmdline.contains("console=tty0") {
+        return Some("/dev/tty0");
+    }
+    if cmdline.contains("console=ttyS0") {
+        return Some("/dev/ttyS0");
+    }
+    if Path::new("/dev/console").exists() {
+        return Some("/dev/console");
+    }
+    None
 }
 
 fn active_console() -> Option<&'static str> {
     let cmdline = std::fs::read_to_string("/proc/cmdline").ok()?;
-    let device = if cmdline.contains("console=tty0") {
-        "/dev/tty0"
-    } else if cmdline.contains("console=ttyS0") {
-        "/dev/ttyS0"
-    } else {
-        return None;
-    };
+    let device = resolve_console_device(&cmdline)?;
     OpenOptions::new().read(true).write(true).open(device).ok()?;
     Some(device)
 }
 
 fn main() {
-    bootup();
-    std::thread::sleep(std::time::Duration::from_secs(3));
-    clear();
     mount_fs("proc", "/proc", "proc", MsFlags::empty());
     mount_fs("sysfs", "/sys", "sysfs", MsFlags::empty());
     mount_fs("devtmpfs", "/dev", "devtmpfs", MsFlags::empty());
-    mount_fs(
-        "tmpfs",
-        "/tmp",
-        "tmpfs",
-        MsFlags::MS_NOSUID | MsFlags::MS_NODEV,
-    );
+    mount_fs("tmpfs", "/tmp", "tmpfs", MsFlags::MS_NOSUID | MsFlags::MS_NODEV);
+    bootup();
+    std::thread::sleep(std::time::Duration::from_secs(3));
+    clear();
     let _ = fs::lkcreate(Path::new("/admin"));
     if let Err(e) = chdir("/admin") {
         ui::error(&format!(
@@ -124,9 +133,9 @@ fn main() {
     }
     let _ = fs::lkremove(Path::new("/root"));
     banner();
-    let mut shell = Command::new("/bin/busybox");
+    let mut shell = Command::new("/bin/sh");
     shell
-        .args(["setsid", "-c", "sh"])
+        .arg("-i")
         .env("PS1", "\x1b[1;36m[ blackfox@admin ] #\x1b[0m ")
         .current_dir("/admin");
     if let Some(console) = active_console() {
@@ -141,6 +150,11 @@ fn main() {
             .stdin(open_console().unwrap_or_else(|_| Stdio::inherit()))
             .stdout(open_console().unwrap_or_else(|_| Stdio::inherit()))
             .stderr(open_console().unwrap_or_else(|_| Stdio::inherit()));
+    } else {
+        shell
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit());
     }
     let err = shell.exec();
     ui::error(&format!(
@@ -159,6 +173,16 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn test_resolve_console_device() {
+        assert_eq!(super::resolve_console_device("console=tty0"), Some("/dev/tty0"));
+        assert_eq!(super::resolve_console_device("console=ttyS0"), Some("/dev/ttyS0"));
+        if std::path::Path::new("/dev/console").exists() {
+            assert_eq!(super::resolve_console_device("console=ttyAMA0"), Some("/dev/console"));
+        } else {
+            assert_eq!(super::resolve_console_device("console=ttyAMA0"), None);
+        }
+    }
     #[test]
     fn test_bootup() {
         super::bootup();

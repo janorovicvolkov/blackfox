@@ -64,7 +64,7 @@ make kernel
    then:
 
 ```bash
-make rootfs squashfs iso
+make rootfs
 ```
 
 ## Checking a partition's filesystem type (if unsure)

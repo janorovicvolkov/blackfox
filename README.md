@@ -42,7 +42,7 @@ and base applets, while additional recovery utilities are bundled as static bina
 - C toolchain (`gcc` + `binutils`)
 - C++ toolchain (`g++` with static libstdc++/libgcc support)
 - `cpio`
-- GRUB toolchain (`grub-mkrescue` + `xorriso`)
+- GRUB and ISO tools (`grub-mkrescue` + `xorriso`)
 - `qemu-system-x86_64`
 - Rust toolchain (`rustup` + `cargo`)
 - `git`
@@ -71,7 +71,7 @@ make busybox    # download and build static busybox
 make kernel     # download and build kernel
 make tools      # download and statically build recovery tools -> out/tools/<binaries>
 make rootfs     # create out/blackfox.img
-make iso        # create bootable ISO
+make iso        # create out/blackfox.iso
 make release    # create out/release/blackfox-<tag>-x86_64.tar.zst
 ```
 

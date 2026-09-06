@@ -6,15 +6,16 @@ exec tail -n +3 $0
 # searched by GRUB:
 #   /boot/blackfox
 #   /boot/blackfox.img
+terminal_input console
+terminal_output console
+
 menuentry "Black Fox" {
-    set gfxmode=text
-    set gfxpayload=text
-    linux  /boot/blackfox console=tty0 console=ttyS0 quiet
+    linux  /boot/blackfox rdinit=/init console=ttyS0 console=tty0 quiet
     initrd /boot/blackfox.img
 }
 
 # If /boot is a separate partition and the files are copied to its top level,
 # use these paths instead:
 #   search --no-floppy --file --set=root /blackfox
-#   linux  /blackfox console=tty0 console=ttyS0
+#   linux  /blackfox console=ttyS0 console=tty0 quiet
 #   initrd /blackfox.img
