@@ -582,13 +582,12 @@ release:
 	command -v zstd >/dev/null || { echo "ERROR: zstd is required to create releases."; exit 1; }
 	rm -rf $(RELEASE_DIR)/stage
 	mkdir -p $(RELEASE_DIR)/stage/$(IMAGE_NAME)-$(RELEASE_TAG)
-	cp $(KERNEL_OUT) $(RELEASE_DIR)/stage/blackfox-$(RELEASE_TAG)
-	cp $(IMG_OUT) $(RELEASE_DIR)/stage/blackfox-$(RELEASE_TAG).img
+	cp $(KERNEL_OUT) $(RELEASE_DIR)/stage/blackfox
+	cp $(IMG_OUT) $(RELEASE_DIR)/stage/blackfox.img
 	cp $(ISO_OUT) $(RELEASE_ISO)
 	tar --zstd -cf $(RELEASE_ARCHIVE) -C $(RELEASE_DIR)/stage $(IMAGE_NAME)-$(RELEASE_TAG)
 	sha256sum $(RELEASE_ARCHIVE) > $(RELEASE_SUM)
 	sha256sum $(RELEASE_ISO) > $(RELEASE_SUM_ISO)
-	rm -rf $(RELEASE_DIR)/stage
 	@printf 'Release Archive: %s\nChecksum: %s\n' $(RELEASE_ARCHIVE) $(RELEASE_SUM)
 	@printf 'Release ISO: %s\nChecksum: %s\n' $(RELEASE_ISO) $(RELEASE_SUM_ISO)
 
