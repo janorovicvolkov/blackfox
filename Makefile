@@ -581,6 +581,7 @@ release:
 	fi
 	command -v zstd >/dev/null || { echo "ERROR: zstd is required to create releases."; exit 1; }
 	rm -rf $(RELEASE_DIR)/stage
+	mkdir -p $(RELEASE_DIR)/stage
 	cp $(KERNEL_OUT) $(RELEASE_DIR)/stage/blackfox
 	cp $(IMG_OUT) $(RELEASE_DIR)/stage/blackfox.img
 	cp $(ISO_OUT) $(RELEASE_ISO)
