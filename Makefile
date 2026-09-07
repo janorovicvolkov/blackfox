@@ -652,6 +652,7 @@ test:
 clean:
 	cargo clean
 	rm -rf $(OUT_DIR)
+	rm -rf $(ROOTFS_DIR)
 	rm -f Cargo.lock
 
 cleanall: clean
