@@ -1,4 +1,5 @@
 /target
 /build
+/rootfs
 /out
 Cargo.lock

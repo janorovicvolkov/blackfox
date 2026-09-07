@@ -13,7 +13,8 @@
   again later.
 - A custom `init` (`src/init.rs`, using the `liblk` and `nix` crates) as
   PID 1, mounts pseudo-filesystems, changes directory to `/admin`, then
-  `exec`s into `busybox sh`.
+  supervises util-linux `agetty` on `/dev/tty1`, which launches the recovery
+  shell.
 - Direct `poweroff`, `reboot`, and `shutdown` commands. They flush pending
   writes and call the Linux reboot syscall, `shutdown` is a symlink to
   `poweroff`.

@@ -97,8 +97,8 @@ each one produces and how to pin or bump their versions (`E2FSPROGS_VERSION`,
 `MDADM_VERSION`, `GDISK_VERSION`, and `EXFATPROGS_VERSION`).
 
 `ncurses-tool` builds a static wide-character ncurses library first because
-`cfdisk` needs it. `util-linux-tool` then builds static `cfdisk`, `mount`,
-`umount`, and the other selected util-linux commands. The staged ncurses
+`cfdisk` needs it. `util-linux-tool` then builds static `agetty`, `cfdisk`,
+`mount`, `umount`, and the other selected util-linux commands. The staged ncurses
 library is used only during the build and is not copied into the image.
 
 The rootfs depends on the selected static tools being available, so always build

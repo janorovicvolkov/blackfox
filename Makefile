@@ -60,8 +60,8 @@ LK_REPO                    := https://github.com/source-liskalinux/lk.git
 UTIL_LINUX_SRC             := $(BUILD_DIR)/util-linux-$(UTIL_LINUX_VERSION)
 UTIL_LINUX_TAR             := util-linux-$(UTIL_LINUX_VERSION).tar.xz
 UTIL_LINUX_URL             := https://www.kernel.org/pub/linux/utils/util-linux/v2.41/$(UTIL_LINUX_TAR)
-UTIL_LINUX_BINS            := losetup blkid fdisk sfdisk findmnt swapon mkswap blockdev fsck mount umount
-UTIL_LINUX_STATIC_PROGRAMS := blkid,fdisk,losetup,sfdisk,mount,umount
+UTIL_LINUX_BINS            := losetup blkid fdisk sfdisk findmnt swapon mkswap blockdev fsck mount umount agetty
+UTIL_LINUX_STATIC_PROGRAMS := blkid,fdisk,losetup,sfdisk,mount,umount,agetty
 UTIL_LINUX_BINS            += cfdisk
 UTIL_LINUX_STATIC_PROGRAMS := $(UTIL_LINUX_STATIC_PROGRAMS),cfdisk
 NCURSES_SRC                := $(BUILD_DIR)/ncurses-$(NCURSES_VERSION)
@@ -361,7 +361,7 @@ util-linux-tool: ncurses-tool
 	cd $(UTIL_LINUX_SRC) && CC=musl-gcc ./configure --enable-static --disable-shared --disable-liblastlog2 \
 		--without-python --disable-pylibmount --with-ncursesw \
 		--without-systemd --without-udev --disable-chfn-chsh --disable-login \
-		--disable-nologin --disable-su --disable-runuser --disable-agetty \
+		--disable-nologin --disable-su --disable-runuser \
 		--disable-setpriv --disable-rfkill --disable-lsblk \
 		--enable-static-programs=$(UTIL_LINUX_STATIC_PROGRAMS) \
 		CFLAGS="-static -I$(NCURSES_PREFIX)/include" \

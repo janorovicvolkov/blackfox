@@ -4,9 +4,8 @@ use nix::unistd::chdir;
 use std::env;
 use std::fs::OpenOptions;
 use std::io::Write;
-use std::os::unix::process::CommandExt;
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::Command;
 
 fn mount_options(flags: MsFlags) -> String {
     let mut options = Vec::new();
@@ -67,10 +66,7 @@ fn space() {
 fn bootup() {
     clear();
     space();
-    print(&format!(
-        "                        BLACK FOX {}",
-        env!("CARGO_PKG_VERSION")
-    ));
+    print(&format!("                        BLACK FOX {}", env!("CARGO_PKG_VERSION")));
     space();
     print("      \"A small recovery shell for emergency maintenance\"");
     space();
@@ -88,24 +84,28 @@ fn banner() {
     space();
 }
 
-fn resolve_console_device(cmdline: &str) -> Option<&'static str> {
-    if cmdline.contains("console=tty0") {
-        return Some("/dev/tty0");
+fn run_getty() -> ! {
+    loop {
+        let result = Command::new("/bin/agetty")
+            .args([
+                "--noclear",
+                "--skip-login",
+                "--login-program",
+                "/bin/sh",
+                "tty1",
+                "linux",
+            ])
+            .env("PS1", "\x1b[1;36m[ blackfox@admin ] #\x1b[0m ")
+            .current_dir("/admin")
+            .status();
+        if let Err(error) = result {
+            ui::error(&format!(
+                "FATAL: Failed to execute agetty on tty1! Err: {}",
+                error
+            ));
+        }
+        std::thread::sleep(std::time::Duration::from_secs(1));
     }
-    if cmdline.contains("console=ttyS0") {
-        return Some("/dev/ttyS0");
-    }
-    if Path::new("/dev/console").exists() {
-        return Some("/dev/console");
-    }
-    None
-}
-
-fn active_console() -> Option<&'static str> {
-    let cmdline = std::fs::read_to_string("/proc/cmdline").ok()?;
-    let device = resolve_console_device(&cmdline)?;
-    OpenOptions::new().read(true).write(true).open(device).ok()?;
-    Some(device)
 }
 
 fn main() {
@@ -133,56 +133,11 @@ fn main() {
     }
     let _ = fs::lkremove(Path::new("/root"));
     banner();
-    let mut shell = Command::new("/bin/sh");
-    shell
-        .arg("-i")
-        .env("PS1", "\x1b[1;36m[ blackfox@admin ] #\x1b[0m ")
-        .current_dir("/admin");
-    if let Some(console) = active_console() {
-        let open_console = || {
-            OpenOptions::new()
-                .read(true)
-                .write(true)
-                .open(console)
-                .map(Stdio::from)
-        };
-        shell
-            .stdin(open_console().unwrap_or_else(|_| Stdio::inherit()))
-            .stdout(open_console().unwrap_or_else(|_| Stdio::inherit()))
-            .stderr(open_console().unwrap_or_else(|_| Stdio::inherit()));
-    } else {
-        shell
-            .stdin(Stdio::inherit())
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit());
-    }
-    let err = shell.exec();
-    ui::error(&format!(
-        "FATAL: Failed to execute BusyBox shell! Err: {}",
-        err
-    ));
-    ui::error("Halting system to prevent kernel panic!");
-    loop {
-        clear();
-        println!(".");
-        println!("..");
-        println!("...");
-        std::thread::sleep(std::time::Duration::from_secs(2));
-    }
+    run_getty();
 }
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn test_resolve_console_device() {
-        assert_eq!(super::resolve_console_device("console=tty0"), Some("/dev/tty0"));
-        assert_eq!(super::resolve_console_device("console=ttyS0"), Some("/dev/ttyS0"));
-        if std::path::Path::new("/dev/console").exists() {
-            assert_eq!(super::resolve_console_device("console=ttyAMA0"), Some("/dev/console"));
-        } else {
-            assert_eq!(super::resolve_console_device("console=ttyAMA0"), None);
-        }
-    }
     #[test]
     fn test_bootup() {
         super::bootup();
@@ -196,14 +151,18 @@ mod tests {
         super::clear();
     }
     #[test]
-    fn test_loop() {
-        loop {
-            super::clear();
-            println!(".");
-            println!("..");
-            println!("...");
-            std::thread::sleep(std::time::Duration::from_secs(2));
-            break;
-        }
+    fn test_space() {
+        super::space();
+    }
+    #[test]
+    fn test_print() {
+        super::print("Test message");
+    }
+    #[test]
+    fn test_mount_options() {
+        use nix::mount::MsFlags;
+        let flags = MsFlags::MS_NOSUID | MsFlags::MS_NODEV | MsFlags::MS_NOEXEC;
+        let options = super::mount_options(flags);
+        assert_eq!(options, "nosuid,nodev,noexec");
     }
 }
