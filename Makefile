@@ -113,6 +113,7 @@ URCU_URL                   := https://github.com/urcu/userspace-rcu/archive/refs
 INIT_TARGET                := x86_64-unknown-linux-musl
 INIT_BIN                   := $(ROOT_DIR)/target/$(INIT_TARGET)/release/init
 FOX_BIN                    := $(ROOT_DIR)/target/$(INIT_TARGET)/release/fox
+POWER_BIN                  := $(ROOT_DIR)/target/$(INIT_TARGET)/release/power
 
 # OUTPUT FILES CONFIGURATION
 IMAGE_NAME      ?= blackfox
@@ -127,7 +128,7 @@ RELEASE_SUM     := $(RELEASE_DIR)/$(IMAGE_NAME)-$(RELEASE_TAG)-x86_64.tar.zst.sh
 RELEASE_SUM_ISO := $(RELEASE_DIR)/$(IMAGE_NAME)-$(RELEASE_TAG)-x86_64.iso.sha256
 NPROC := $(shell nproc)
 
-.PHONY: all kernel busybox init fox-tool memtest uefi-shell tools lk-tool ncurses-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool ddrescue-tool smartmontools-tool mdadm-tool gdisk-tool exfatprogs-tool inih-tool zlib-tool urcu-tool rootfs iso run iso-test test release github-release clean cleanall help
+.PHONY: all kernel busybox init fox-tool power-tool memtest uefi-shell tools lk-tool ncurses-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool ddrescue-tool smartmontools-tool mdadm-tool gdisk-tool exfatprogs-tool inih-tool zlib-tool urcu-tool rootfs iso run iso-test test release github-release clean cleanall help
 
 all: rootfs kernel
 
@@ -162,7 +163,8 @@ busybox:
 			   CONFIG_ID CONFIG_WHOAMI CONFIG_SULOGIN CONFIG_VLOCK CONFIG_INIT CONFIG_GETTY \
 			   CONFIG_CTTYHACK CONFIG_RMDIR CONFIG_RMMOD CONFIG_STTY CONFIG_HOSTNAME CONFIG_UNAME \
 			   CONFIG_USERS CONFIG_TTY CONFIG_RUN_INIT CONFIG_ADD_SHELL CONFIG_MKPASSWD CONFIG_REMOVE_SHELL \
-			   CONFIG_MKE2FS CONFIG_MKDOSFS CONFIG_MKFS_EXT2 CONFIG_MKFS_VFAT CONFIG_SWITCH_ROOT; do \
+			   CONFIG_MKE2FS CONFIG_MKDOSFS CONFIG_MKFS_EXT2 CONFIG_MKFS_VFAT CONFIG_SWITCH_ROOT \
+			   CONFIG_REBOOT CONFIG_POWEROFF; do \
 		sed -i "s|$${cfg}=y|# $${cfg} is not set|g" $(BUSYBOX_SRC)/.config; \
 	done
 	$(MAKE) -C $(BUSYBOX_SRC) -j$(NPROC)
@@ -185,6 +187,16 @@ fox-tool:
 	cp $(FOX_BIN) $(OUT_DIR)/tools/fox
 	strip $(OUT_DIR)/tools/fox 2>/dev/null || true
 	chmod +x $(OUT_DIR)/tools/fox
+
+# POWER COMMAND BUILD
+power-tool:
+	rustup target add $(INIT_TARGET) 2>/dev/null || true
+	cargo build --release --target $(INIT_TARGET) --bin power
+	mkdir -p $(OUT_DIR)/tools
+	cp $(POWER_BIN) $(OUT_DIR)/tools/poweroff
+	cp $(POWER_BIN) $(OUT_DIR)/tools/reboot
+	strip $(OUT_DIR)/tools/poweroff $(OUT_DIR)/tools/reboot 2>/dev/null || true
+	chmod +x $(OUT_DIR)/tools/poweroff $(OUT_DIR)/tools/reboot
 
 
 # MEMTEST BUILD
@@ -219,7 +231,7 @@ uefi-shell:
 
 
 # TOOLS BUILD
-tools: e2fsprogs-tool dosfstools-tool fox-tool lk-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool ddrescue-tool smartmontools-tool mdadm-tool gdisk-tool exfatprogs-tool
+tools: e2fsprogs-tool dosfstools-tool fox-tool power-tool lk-tool util-linux-tool ntfs3g-tool testdisk-tool rsync-tool xfsprogs-tool btrfs-progs-tool f2fs-tools-tool ddrescue-tool smartmontools-tool mdadm-tool gdisk-tool exfatprogs-tool
 	file $(OUT_DIR)/tools/*
 
 e2fsprogs-tool:
@@ -521,9 +533,8 @@ urcu-tool:
 
 # ROOTFS AND INITRAMFS BUILD
 rootfs:
-	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(OUT_DIR)/tools/* ]; then \
-		echo "ERROR: Kernel or tools binary not found. Please run 'make all' first."; \
-		exit 1; \
+	if [ ! -f $(OUT_DIR)/busybox ] || [ ! -f $(OUT_DIR)/init ] || [ ! -f $(OUT_DIR)/tools/* ]; then \
+		$(MAKE) tools busybox init; \
 	fi
 	mkdir -p $(ROOTFS_DIR)/proc
 	mkdir -p $(ROOTFS_DIR)/sys
@@ -542,6 +553,7 @@ rootfs:
 	cp $(OUT_DIR)/busybox $(ROOTFS_DIR)/bin/busybox
 	( cd $(ROOTFS_DIR) && ./bin/busybox --install -s ./bin )
 	find $(ROOTFS_DIR)/bin -maxdepth 1 -type l -lname '$(ROOTFS_DIR)/bin/busybox' -exec sh -c 'for link do ln -sf busybox "$$link"; done' sh {} +
+	ln -sf poweroff $(ROOTFS_DIR)/bin/shutdown
 	rm -f $(ROOTFS_DIR)/bin/install
 	chmod +x $(ROOTFS_DIR)/bin/* 2>/dev/null || true
 	cp $(OUT_DIR)/init $(ROOTFS_DIR)/init
@@ -552,8 +564,7 @@ rootfs:
 # ISO IMAGE BUILD
 iso:
 	if [ ! -f $(KERNEL_OUT) ] || [ ! -f $(IMG_OUT) ]; then \
-		echo "ERROR: Kernel or initramfs image not found. Please run 'make all' first."; \
-		exit 1; \
+		$(MAKE) all; \
 	fi
 	@if [ ! -d /usr/lib/grub/i386-pc ] || [ ! -d /usr/lib/grub/x86_64-efi ] || [ ! -d /usr/lib/grub/i386-efi ]; then \
 		echo "ERROR: Missing GRUB platform modules. Need i386-pc, i386-efi, and x86_64-efi."; \

@@ -374,15 +374,22 @@ fn center_text(text: &str, width: usize) -> String {
     format!("{}{}{}", " ".repeat(left), clipped, " ".repeat(right))
 }
 
+fn control_key(byte: u8) -> Option<char> {
+    (1..=26)
+        .contains(&byte)
+        .then(|| (b'a' + byte - 1) as char)
+}
+
 fn read_key() -> io::Result<(KeyCode, KeyModifiers)> {
     let mut input = io::stdin();
     let mut byte = [0u8; 1];
     input.read_exact(&mut byte)?;
     match byte[0] {
-        3 => Ok((KeyCode::Char('c'), KeyModifiers::CONTROL)),
-        8 | 127 => Ok((KeyCode::Backspace, KeyModifiers::empty())),
-        9 => Ok((KeyCode::Tab, KeyModifiers::empty())),
-        10 | 13 => Ok((KeyCode::Enter, KeyModifiers::empty())),
+        byte @ 1..=26 => Ok((
+            KeyCode::Char(control_key(byte).expect("control byte is in range")),
+            KeyModifiers::CONTROL,
+        )),
+        127 => Ok((KeyCode::Backspace, KeyModifiers::empty())),
         27 => {
             let mut sequence = [0u8; 2];
             input.read_exact(&mut sequence[..1])?;
@@ -423,6 +430,19 @@ fn read_key() -> io::Result<(KeyCode, KeyModifiers)> {
                 .unwrap_or('\u{fffd}');
             Ok((KeyCode::Char(character), KeyModifiers::empty()))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn control_bytes_are_mapped_to_letters() {
+        assert_eq!(super::control_key(1), Some('a'));
+        assert_eq!(super::control_key(8), Some('h'));
+        assert_eq!(super::control_key(19), Some('s'));
+        assert_eq!(super::control_key(24), Some('x'));
+        assert_eq!(super::control_key(0), None);
+        assert_eq!(super::control_key(27), None);
     }
 }
 

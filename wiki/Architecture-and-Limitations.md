@@ -14,6 +14,9 @@
 - A custom `init` (`src/init.rs`, using the `liblk` and `nix` crates) as
   PID 1, mounts pseudo-filesystems, changes directory to `/admin`, then
   `exec`s into `busybox sh`.
+- Direct `poweroff`, `reboot`, and `shutdown` commands. They flush pending
+  writes and call the Linux reboot syscall, `shutdown` is a symlink to
+  `poweroff`.
 - Static recovery tools in `/bin`, built automatically by `make tools`: e2fsprogs,
   dosfstools, `lk`, util-linux (`fdisk`, `cfdisk`, `mount`, `umount`, `sfdisk`,
   `findmnt`, `blkid`, and filesystem helpers), XFS tools, Btrfs tools, F2FS tools,

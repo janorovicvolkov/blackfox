@@ -116,8 +116,10 @@ the userspace side too.
 
 Assembles `build/rootfs`: creates `/proc`, `/sys`, `/dev`, `/tmp`, `/mnt`,
 `/admin`, `/bin`, `/bin/others`, `/lib` (`/sbin` and `/lib64` symlinked to `/bin` and
-`/lib`), copies `out/tools/*` into `/bin`, installs `busybox` applet symlinks, and
-drops in `init`. After that, it will made a initramfs image at `out/blackfox.img`.
+`/lib`), copies `out/tools/*` into `/bin`, installs `busybox` applet symlinks,
+restores the direct `poweroff` and `reboot` commands, links `shutdown` to
+`poweroff`, and drops in `init`. After that, it makes an initramfs image at
+`out/blackfox.img`.
 
 ### `iso`
 
